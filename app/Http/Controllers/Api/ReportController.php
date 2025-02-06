@@ -70,17 +70,8 @@ class ReportController extends Controller
                     }
                 }
 
-                // Log success message
-                \Log::info('Report created successfully', ['report_id' => $report->id]);
-
                 return response()->json(['message' => 'Report created successfully!', 'report' => $report]);
             } catch (\Exception $e) {
-                // Log error message if an exception occurs
-                \Log::error('Error creating report', [
-                    'error' => $e->getMessage(),
-                    'stack' => $e->getTraceAsString(),
-                ]);
-
                 // Return error response
                 return response()->json(['error' => 'Failed to create report'], 500);
             }
@@ -127,7 +118,6 @@ class ReportController extends Controller
             try {
                 $report = Report::find($report_id);
                 if (!$report) {
-                    \Log::warning('Report not found', ['report_id' => $report_id]);
                     return response()->json(['error' => 'Report not found'], 404);
                 }
 
@@ -186,16 +176,8 @@ class ReportController extends Controller
                     }
                 }
 
-                // Log success message
-                \Log::info('Report updated successfully', ['report_id' => $report->id]);
-
                 return response()->json(['message' => 'Report updated successfully!']);
             } catch (\Exception $e) {
-                // Log error message if an exception occurs
-                \Log::error('Error updating report', [
-                    'error' => $e->getMessage(),
-                    'stack' => $e->getTraceAsString(),
-                ]);
 
                 // Return error response
                 return response()->json(['error' => 'Failed to update report'], 500);
@@ -224,16 +206,8 @@ class ReportController extends Controller
             // Delete the report
             $report->delete();
 
-            // Log success message
-            \Log::info('Report deleted successfully', ['report_id' => $id]);
-
             return response()->json(['message' => 'Report deleted successfully!']);
         } catch (\Exception $e) {
-            // Log error message if an exception occurs
-            \Log::error('Error deleting report', [
-                'error' => $e->getMessage(),
-                'stack' => $e->getTraceAsString(),
-            ]);
 
             return response()->json(['error' => 'Failed to delete report'], 500);
         }

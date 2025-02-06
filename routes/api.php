@@ -13,6 +13,7 @@ use App\Http\Controllers\API\ReportCommentController;
 use App\Http\Controllers\API\CalendarController;
 use App\Http\Controllers\API\MeetingController;
 use App\Http\Controllers\API\SummaryReportController;
+use App\Http\Controllers\API\FileController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -89,3 +90,5 @@ Route::apiResource('projects', ProjectController::class)->except(['index']);
         Route::get('/summary-reports/{id}', [SummaryReportController::class, 'getSummaryReportById']);
         Route::post('/summary-reports', [SummaryReportController::class, 'createSummaryReport']);
     });
+
+    Route::middleware(['auth:sanctum'])->get('/download-file', [FileController::class, 'downloadFile']);
