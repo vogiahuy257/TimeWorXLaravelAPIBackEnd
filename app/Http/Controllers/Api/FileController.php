@@ -10,15 +10,20 @@ class FileController extends Controller
 {
     public function downloadFile(Request $request)
     {
-        // Lấy đường dẫn file từ query string
         $filePath = $request->query('path'); 
 
-        // Kiểm tra file có tồn tại trong storage không
+        // Kiểm tra đường dẫn có hợp lệ không
+        if (strpos($filePath, '..') !== false) {
+            return response()->json(['error' => 'Invalid file path'], 400);
+        }
+        
+        $fullPath = storage_path("app/public/{$filePath}");
+
         if (!Storage::disk('public')->exists($filePath)) {
             return response()->json(['error' => 'File not found'], 404);
         }
 
-        // Trả về file
-        return Storage::download($filePath);
+        return response()->download($fullPath);
     }
+
 }

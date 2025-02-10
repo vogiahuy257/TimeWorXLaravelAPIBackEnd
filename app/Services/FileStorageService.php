@@ -12,26 +12,33 @@ class FileStorageService
     {
         $this->storagePath = $storagePath;
     }
-
     public function storeFile($file)
     {
-        $this->ensureStoragePathExists(); // Đảm bảo thư mục lưu trữ tồn tại
+        $this->ensureStoragePathExists();
+        
+        try {
+            $storedPath = $file->store($this->storagePath, 'public');
 
-        $storedPath = $file->store($this->storagePath, 'public'); // Lưu tệp vào disk 'public'
+            if (!Storage::disk('public')->exists($storedPath)) {
+                throw new \Exception("File not saved correctly at path: $storedPath");
+            }
 
-        // Kiểm tra tệp có được lưu thành công hay không
-        if (!Storage::disk('public')->exists($storedPath)) {
-            // Ghi lỗi vào log
-            Log::error("File not saved correctly at path: $storedPath", [
-                'storagePath' => $this->storagePath,
-                'fileName' => $file->getClientOriginalName(),
-            ]);
+            return $storedPath;
+        } catch (\Exception $e) {
+            Log::error("File upload failed", ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
 
-            // Ném ngoại lệ để xử lý tiếp
-            throw new \Exception("File not saved correctly at path: $storedPath");
+
+    public function getFileUrl($filePath)
+    {
+        // Kiểm tra nếu file tồn tại trong disk 'public'
+        if (Storage::disk('public')->exists($filePath)) {
+            return asset('storage/' . $filePath);
         }
 
-        return $storedPath; // Trả về đường dẫn lưu trữ
+        return null; // Trả về null nếu file không tồn tại
     }
 
     public function setStoragePath($storagePath)
@@ -40,23 +47,14 @@ class FileStorageService
         $this->ensureStoragePathExists(); // Đảm bảo thư mục tồn tại khi thay đổi đường dẫn
     }
 
-    public function deleteFile($filename)
+    public function deleteFile($filePath)
     {
-        if (strpos($filename, $this->storagePath) !== false) 
-        {
-            $filePath = '/' . $filename;
-        } 
-        else 
-        {
-            $filePath = $this->storagePath . '/' . $filename;
-        }
-
-        if (Storage::disk('public')->exists($filePath)) 
-        {
+        if (Storage::disk('public')->exists($filePath)) {
             return Storage::disk('public')->delete($filePath);
         }
 
-        return;
+        Log::warning("File not found for deletion: $filePath");
+        return false;
     }
 
     /**

@@ -57,16 +57,18 @@ class ReportController extends Controller
                     $report->files()->attach($file->file_id);
                 } else {
                     // Handle file upload
-                    foreach ($request->documents as $uploadedFile) {
-                        $filePath = $fileStorageService->storeFile($uploadedFile);
-                        $file = File::create([
-                            'name' => $uploadedFile->getClientOriginalName(),
-                            'uploaded_by' => $request->report_by_user_id,
-                            'project_id' => $report->project_id,
-                            'type' => $uploadedFile->getClientMimeType(),
-                            'path' => $filePath,
-                        ]);
-                        $report->files()->attach($file->file_id);
+                    if ($request->hasFile('documents')) {
+                        foreach ($request->file('documents') as $uploadedFile) {
+                            $filePath = $fileStorageService->storeFile($uploadedFile); // Lưu file
+                            $file = File::create([
+                                'name' => $uploadedFile->getClientOriginalName(),
+                                'uploaded_by' => $request->report_by_user_id,
+                                'project_id' => $report->project_id,
+                                'type' => $uploadedFile->getClientMimeType(),
+                                'path' => $filePath,
+                            ]);
+                            $report->files()->attach($file->file_id);
+                        }
                     }
                 }
 
@@ -135,55 +137,120 @@ class ReportController extends Controller
 
                 $report->update($validatedData);
 
+                // Xóa toàn bộ file cũ trước khi cập nhật file mới hoặc link
+                foreach ($report->files as $file) {
+                    $fileStorageService->deleteFile($file->path);
+                    $file->delete();
+                }
+                $report->files()->detach();
+
                 if ($request->isLink) {
-                    // Remove old files and handle link
-                    if ($report->isLink) {
-                        foreach ($report->files as $file) {
-                            $fileStorageService->deleteFile($file->path);
-                            $file->delete();
-                        }
-                    }
-                    $report->files()->delete();
-
-                    $file = File::create([
-                        'name' => $request->documents,
-                        'uploaded_by' => $request->report_by_user_id,
-                        'project_id' => $report->project_id,
-                        'type' => 'link',
-                        'path' => $request->documents,
-                    ]);
-                    $report->files()->attach($file->file_id);
-                } else {
-                    if (!$request->documents) {
-                        return response()->json(['message' => 'Report updated successfully!']);
-                    }
-
-                    foreach ($report->files as $file) {
-                        $fileStorageService->deleteFile($file->path);
-                        $file->delete();
-                    }
-
-                    foreach ($request->documents as $uploadedFile) {
-                        $filePath = $fileStorageService->storeFile($uploadedFile);
+                    // Xử lý khi là link
+                    if ($request->documents) {
                         $file = File::create([
-                            'name' => $uploadedFile->getClientOriginalName(),
+                            'name' => $request->documents,
                             'uploaded_by' => $request->report_by_user_id,
                             'project_id' => $report->project_id,
-                            'type' => $uploadedFile->getClientMimeType(),
-                            'path' => $filePath,
+                            'type' => 'link',
+                            'path' => $request->documents,
                         ]);
                         $report->files()->attach($file->file_id);
+                    }
+                } else {
+                    // Nếu không phải là link, kiểm tra xem có file nào được upload không
+                    if ($request->hasFile('documents')) {
+                        foreach ($request->file('documents') as $uploadedFile) {
+                            $filePath = $fileStorageService->storeFile($uploadedFile);
+                            $file = File::create([
+                                'name' => $uploadedFile->getClientOriginalName(),
+                                'uploaded_by' => $request->report_by_user_id,
+                                'project_id' => $report->project_id,
+                                'type' => $uploadedFile->getClientMimeType(),
+                                'path' => $filePath,
+                            ]);
+                            $report->files()->attach($file->file_id);
+                        }
                     }
                 }
 
                 return response()->json(['message' => 'Report updated successfully!']);
             } catch (\Exception $e) {
-
-                // Return error response
-                return response()->json(['error' => 'Failed to update report'], 500);
+                return response()->json(['error' => 'Failed to update report', 'details' => $e->getMessage()], 500);
             }
         });
     }
+    // public function update($report_id, Request $request, FileStorageService $fileStorageService)
+    // {
+    //     return DB::transaction(function () use ($report_id, $request, $fileStorageService) {
+    //         try {
+    //             $report = Report::find($report_id);
+    //             if (!$report) {
+    //                 return response()->json(['error' => 'Report not found'], 404);
+    //             }
+
+    //             $validatedData = $request->validate([
+    //                 'report_by_user_id' => 'required|exists:users,id',
+    //                 'project_id' => 'required|exists:projects,project_id',
+    //                 'task_id' => 'nullable|exists:tasks,task_id',
+    //                 'completion_goal' => 'nullable|string',
+    //                 'today_work' => 'nullable|string',
+    //                 'next_steps' => 'nullable|string',
+    //                 'issues' => 'nullable|string',
+    //                 'isLink' => 'required|boolean',
+    //                 'documents' => 'nullable',
+    //             ]);
+
+    //             $report->update($validatedData);
+
+    //             if ($request->isLink) {
+    //                 // Remove old files and handle link
+    //                 if ($report->isLink) {
+    //                     foreach ($report->files as $file) {
+    //                         $fileStorageService->deleteFile($file->path);
+    //                         $file->delete();
+    //                     }
+    //                 }
+    //                 $report->files()->delete();
+
+    //                 $file = File::create([
+    //                     'name' => $request->documents,
+    //                     'uploaded_by' => $request->report_by_user_id,
+    //                     'project_id' => $report->project_id,
+    //                     'type' => 'link',
+    //                     'path' => $request->documents,
+    //                 ]);
+    //                 $report->files()->attach($file->file_id);
+    //             } else {
+    //                 if (!$request->documents) {
+    //                     return response()->json(['message' => 'Report updated successfully!']);
+    //                 }
+
+    //                 foreach ($report->files as $file) {
+    //                     $fileStorageService->deleteFile($file->path);
+    //                     $file->delete();
+    //                 }
+
+    //                 foreach ($request->documents as $uploadedFile) {
+    //                     $filePath = $fileStorageService->storeFile($uploadedFile);
+    //                     $file = File::create([
+    //                         'name' => $uploadedFile->getClientOriginalName(),
+    //                         'uploaded_by' => $request->report_by_user_id,
+    //                         'project_id' => $report->project_id,
+    //                         'type' => $uploadedFile->getClientMimeType(),
+    //                         'path' => $filePath,
+    //                     ]);
+    //                     $report->files()->attach($file->file_id);
+    //                 }
+    //             }
+
+    //             return response()->json(['message' => 'Report updated successfully!']);
+    //         } catch (\Exception $e) {
+
+    //             // Return error response
+    //             return response()->json(['error' => 'Failed to update report'], 500);
+    //         }
+    //     });
+    // }
 
     
 

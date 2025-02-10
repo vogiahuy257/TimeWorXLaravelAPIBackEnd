@@ -91,4 +91,4 @@ Route::apiResource('projects', ProjectController::class)->except(['index']);
         Route::post('/summary-reports', [SummaryReportController::class, 'createSummaryReport']);
     });
 
-    Route::middleware(['auth:sanctum'])->get('/download-file', [FileController::class, 'downloadFile']);
+    Route::middleware(['auth:sanctum'])->get('/files/download', [FileController::class, 'downloadFile']);
