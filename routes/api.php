@@ -19,7 +19,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::apiResource('projects', ProjectController::class)->except(['index']);
+Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::class)->except(['index']);
     
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
@@ -28,7 +28,7 @@ Route::apiResource('projects', ProjectController::class)->except(['index']);
     Route::get('/projects/restore/{id}', [ProjectController::class, 'restoreProject']);
     Route::post('/projects/{projectId}/users', [ProjectController::class, 'addUserToProject']);
     Route::put('/projects/{projectId}/user-role', [ProjectController::class, 'updateUserRoleInProject']);
-    Route::get('/projects/statistics/{user_id}', [ProjectController::class, 'getStatisticsOfTasks']);
+    Route::middleware(['auth:sanctum'])->get('/v1/projects/statistics', [ProjectController::class, 'getStatisticsOfTasks']);
     Route::middleware(['auth:sanctum'])->post('/projects/{project_id}/statistics', [ProjectController::class, 'getProjectStatistics']);
 
     Route::delete('/v1/projects/{projectId}/remove-user', [ProjectController::class, 'removeUserFromProject']);

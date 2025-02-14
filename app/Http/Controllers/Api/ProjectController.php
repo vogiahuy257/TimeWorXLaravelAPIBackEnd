@@ -71,12 +71,11 @@ class ProjectController extends Controller
             'project_description' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
-            'user_id' => 'required|uuid',
             'project_status'=>'nullable|string|max:200',
         ]);
 
         // Gán project_manager là user_id
-        $validated['project_manager'] = $request->user_id;
+        $validated['project_manager'] = $request->user()->id;
 
         // Tạo dự án mới
         Project::create($validated);
@@ -137,9 +136,10 @@ class ProjectController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $user_id = $request->user()->id;
         $project = Project::findOrFail($id);
 
-        if (!$project->isUserProjectManager($request->user_id)) {
+        if (!$project->isUserProjectManager($user_id)) {
             return response()->json(['error' => 'Update false'], 403);
         }
 
@@ -148,7 +148,6 @@ class ProjectController extends Controller
             'project_description' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
-            'user_id' => 'required|uuid',
             'project_status'=>'nullable|string|max:200',
         ]);
 
@@ -258,8 +257,9 @@ class ProjectController extends Controller
         return response()->json(['message' => 'User role updated successfully']);
     }
 
-    public function getStatisticsOfTasks($user_id)
+    public function getStatisticsOfTasks(Request $request)
     {
+        $user_id = $request->user()->id;
         $projects = Project::nonDeleted()
         ->where(function ($query) use ($user_id) {
             $query->where('project_manager', $user_id)
