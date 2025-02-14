@@ -13,33 +13,43 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index($user_id)
+    public function index(Request $request)
     {
-        // Lấy toàn bộ project mà user_id là project_manager
-        $projects = Project::nonDeleted()
-        ->where(function ($query) use ($user_id) 
-        {
-            $query->where('project_manager', $user_id)
-                  ->orWhereHas('users', function ($query) use ($user_id) 
-                  {
-                      $query->where('user_id', $user_id)
-                            ->where('is_project_manager', true);
-                  });
-        })
-        ->get();
+        // Lấy danh sách các dự án mà user đó là project manager hoặc là thành viên của dự án đó (với quyền project manager) 
+        try {
+            if (!$request->user()) {
+                \Log::error('Không thể lấy user từ request');
+                return response()->json(['message' => 'Không thể xác định người dùng'], 401);
+            }
 
-        // Kiểm tra nếu user không phải là project_manager của bất kỳ project nào
-        if ($projects->isEmpty()) {
-            return response()->json(['message' => 'User không phải là project manager của bất kỳ dự án nào'], 404);
+            $user_id = $request->user()->id;
+
+            $projects = Project::nonDeleted()
+                ->withCount(['tasks', 'users'])
+                ->where(function ($query) use ($user_id) {
+                    $query->where('project_manager', $user_id)
+                        ->orWhereHas('users', function ($query) use ($user_id) {
+                            $query->where('user_id', $user_id)
+                                ->where('is_project_manager', true);
+                        });
+                })
+                ->get();
+
+            if ($projects->isEmpty()) {
+                \Log::warning('User không phải project manager của bất kỳ dự án nào');
+                return response()->json(['message' => 'User không phải là project manager của bất kỳ dự án nào'], 404);
+            }
+
+            foreach ($projects as $project) {
+                $project->updateProjectStatus();
+            }
+
+            return response()->json(['projects' => $projects]);
+
+        } catch (\Exception $e) {
+            \Log::error('Lỗi khi lấy danh sách projects', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Lỗi hệ thống'], 500);
         }
-        foreach ($projects as $project) {
-            $project->updateProjectStatus();
-            $project->tasks_count = $project->tasks()->count();
-            $project->user_count = $project->users()->count();
-        }
-        return response()->json([
-            'projects' => $projects
-        ], 200);
     }
 
 
@@ -199,7 +209,7 @@ class ProjectController extends Controller
     //xóa người dùng khỏi dự án
     public function removeUserFromProject(Request $request, $projectId,$userId)
     {
-        $user_id = $request->input('user_id');
+        $user_id = $request->user()->id;
 
         // Kiểm tra xem dự án có tồn tại không
         $project = Project::find($projectId);

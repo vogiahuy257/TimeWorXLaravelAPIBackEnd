@@ -21,7 +21,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::apiResource('projects', ProjectController::class)->except(['index']);
     
-    Route::get('/projects/{user_id}/projects-tasks', [ProjectController::class, 'index']);
+    Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
     Route::get('/projects/deleted/{user_id}', [ProjectController::class, 'getDeletedProjects']);
     Route::delete('/projects/permanently-delete/{id}', [ProjectController::class, 'permanentlyDeleteProject']);
@@ -31,14 +31,14 @@ Route::apiResource('projects', ProjectController::class)->except(['index']);
     Route::get('/projects/statistics/{user_id}', [ProjectController::class, 'getStatisticsOfTasks']);
     Route::middleware(['auth:sanctum'])->post('/projects/{project_id}/statistics', [ProjectController::class, 'getProjectStatistics']);
 
-    Route::delete('/projects/{projectId}/remove-user/{userId}', [ProjectController::class, 'removeUserFromProject']);
+    Route::delete('/v1/projects/{projectId}/remove-user', [ProjectController::class, 'removeUserFromProject']);
 
 
 
     // Route Projectview (TASK)
     Route::apiResource('project-view', ProjectControllerView::class);
     Route::post('/project-view/{project_id}/tasks', [ProjectControllerView::class, 'createTaskToProject']);
-    Route::put('/project-view/{projectId}/tasks/{taskId}', [ProjectControllerView::class, 'updateTaskProject']);
+    Route::middleware(['auth:sanctum'])->put('/project-view/{projectId}/tasks/{taskId}', [ProjectControllerView::class, 'updateTaskProject']);
 
     Route::get('/project-view/{projectId}/deleted-tasks', [ProjectControllerView::class, 'getDeletedTasks']);
 
@@ -69,7 +69,7 @@ Route::apiResource('projects', ProjectController::class)->except(['index']);
     // Route User
     Route::apiResource('users', UserController::class);
     Route::get('/users/search', [UserController::class, 'search']);
-    Route::get('/users/{userId}/tasks', [UserController::class, 'getAllTaskNameToUser'])->where('userId', '[0-9a-fA-F\-]{36}');
+    Route::middleware(['auth:sanctum'])->get('v1/users/getall/tasks', [UserController::class, 'getAllTaskNameToUser']);
 
      // Xem danh sách bình luận của một báo cáo
     Route::get('/reports/{taskId}/comments/{userId}', [ReportCommentController::class, 'index']);
