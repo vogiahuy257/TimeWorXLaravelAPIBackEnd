@@ -25,26 +25,26 @@ class ProjectController extends Controller
             $user_id = $request->user()->id;
 
             $projects = Project::nonDeleted()
-                ->withCount(['tasks', 'users'])
-                ->where(function ($query) use ($user_id) {
-                    $query->where('project_manager', $user_id)
-                        ->orWhereHas('users', function ($query) use ($user_id) {
-                            $query->where('user_id', $user_id)
+            ->where(function ($query) use ($user_id) 
+            {
+                $query->where('project_manager', $user_id)
+                    ->orWhereHas('users', function ($query) use ($user_id) 
+                    {
+                        $query->where('user_id', $user_id)
                                 ->where('is_project_manager', true);
-                        });
-                })
-                ->get();
+                    });
+            })
+            ->get();
 
-            if ($projects->isEmpty()) {
-                \Log::warning('User không phải project manager của bất kỳ dự án nào');
-                return response()->json(['message' => 'User không phải là project manager của bất kỳ dự án nào'], 404);
-            }
-
+            // Cập nhật trạng thái và thông tin cho từng dự án
             foreach ($projects as $project) {
                 $project->updateProjectStatus();
+                $project->late_tasks_count = $project->countLateTasks();
+                $project->near_deadline_tasks_count = $project->countNearDeadlineTasks();
+                $project->completed_tasks_ratio = $project->countTasksAndCompleted();
             }
 
-            return response()->json(['projects' => $projects]);
+            return response()->json($projects);
 
         } catch (\Exception $e) {
             \Log::error('Lỗi khi lấy danh sách projects', ['error' => $e->getMessage()]);
@@ -88,6 +88,8 @@ class ProjectController extends Controller
      */
     public function show(string $user_id)
     {
+
+        // sửa lại phương thức này là phương thức xem dự án vì index đã đổi thành dư án
         $projects = Project::nonDeleted()
         ->where(function ($query) use ($user_id) 
         {

@@ -36,7 +36,7 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
 
 
     // Route Projectview (TASK)
-    Route::apiResource('project-view', ProjectControllerView::class);
+    Route::middleware(['auth:sanctum'])->apiResource('project-view', ProjectControllerView::class);
     Route::post('/project-view/{project_id}/tasks', [ProjectControllerView::class, 'createTaskToProject']);
     Route::middleware(['auth:sanctum'])->put('/project-view/{projectId}/tasks/{taskId}', [ProjectControllerView::class, 'updateTaskProject']);
 
@@ -47,7 +47,7 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::get('/project-view/{project_id}/users', [ProjectControllerView::class, 'getUsersByProject']);
 
     // Task
-    Route::apiResource('tasks', TaskController::class);
+    Route::middleware(['auth:sanctum'])->apiResource('tasks', TaskController::class);
     Route::get('/tasks/{projectId}/done', [TaskController::class, 'getDoneTasksByProject']);
 
     //Task Comment
