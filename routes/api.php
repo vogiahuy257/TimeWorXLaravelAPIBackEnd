@@ -47,9 +47,24 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::get('/project-view/{project_id}/users', [ProjectControllerView::class, 'getUsersByProject']);
 
     // Task
-    Route::middleware(['auth:sanctum'])->apiResource('tasks', TaskController::class);
+    Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+        // Route cho phương thức index (GET /api/v1/tasks)
+        Route::get('tasks', [TaskController::class, 'index']);
+        
+        // Route cho phương thức store (POST /api/v1/tasks)
+        Route::post('tasks', [TaskController::class, 'store']);
+        
+        // Route cho phương thức show (GET /api/v1/tasks/{task})
+        // Route::get('tasks/{task}', [TaskController::class, 'show']);
+        
+        // Route cho phương thức update (PUT /api/v1/tasks/{task})
+        Route::put('tasks/{task}', [TaskController::class, 'update']);
+        
+        // Route cho phương thức destroy (DELETE /api/v1/tasks/{task})
+        Route::delete('tasks/{task}', [TaskController::class, 'destroy']);
+    });
+    
     Route::get('/tasks/{projectId}/done', [TaskController::class, 'getDoneTasksByProject']);
-
     //Task Comment
     Route::apiResource('task-comments', TaskCommentController::class)->except(['index']);
     Route::get('tasks/{taskId}/comments', [TaskCommentController::class, 'index']);
@@ -62,7 +77,7 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     // PersonalPlanController
     Route::apiResource('personal-plans', PersonalPlanController::class);
     Route::put('/personal-plans/{id}/status', [PersonalPlanController::class, 'updateStatus']);
-    Route::get('/personal-plans/trashed/{user_id}', [PersonalPlanController::class, 'trashed']);
+    Route::middleware(['auth:sanctum'])->get('/v1/personal-plans/trashed', [PersonalPlanController::class, 'trashed']);
     Route::post('/personal-plans/{id}/restore', [PersonalPlanController::class, 'restore']);
     Route::delete('/personal-plans/{id}/force-delete', [PersonalPlanController::class, 'forceDelete']);
 

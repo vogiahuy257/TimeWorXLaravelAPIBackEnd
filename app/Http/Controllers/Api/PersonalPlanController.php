@@ -128,8 +128,9 @@ class PersonalPlanController extends Controller
         return response()->json();
     }
 
-    public function trashed($user_id)
+    public function trashed(Request $request)
     {
+        $user_id = $request->user()->id;
         $trashedPlans = PersonalPlan::onlyTrashed()->where('user_id', $user_id)->get();
         return response()->json($trashedPlans);
     }

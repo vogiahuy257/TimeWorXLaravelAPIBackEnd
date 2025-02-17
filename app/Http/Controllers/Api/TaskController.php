@@ -14,41 +14,9 @@ class TaskController extends Controller
     /**
      * Display a listing of the tasks.
      */
-
-    public function index()
+    public function index(Request $request)
     {
-        $userId = Auth::id();
-        $tasks = Task::where('assigned_to_user_id', $userId)->get();
-
-        return response()->json($tasks);
-    }
-
-    /**
-     * Store a newly created task in storage.
-     */
-    public function store(Request $request)
-    {
-        // Validate các dữ liệu được gửi từ form
-        $validatedData = $request->validate([
-            'project_id' => 'required',
-            'task_name' => 'required|string|max:255',
-            'task_description' => 'nullable|string',
-            'status_key' => 'required',
-            'assigned_to_user_id' => 'nullable|exists:users,id',
-            'deadline' => 'nullable|date',
-        ]);
-
-        // Tạo task mới
-        $task = Task::create($validatedData);
-        return response()->json($task, 201);
-    }
-
-    /**
-     * Display the specified task.
-     */
-    public function show($id)
-    {
-        $userId = $id;
+        $userId = $request->user()->id;
         $user = User::find($userId);
         $tasks = $user->tasks()->with('project')->get();
         $personalPlans = PersonalPlan::where('user_id', $userId)->get();
@@ -112,6 +80,68 @@ class TaskController extends Controller
         }
         return response()->json($response);
     }
+
+    /**
+     * Store a newly created task in storage.
+     */
+    public function store(Request $request)
+    {
+        // Validate các dữ liệu được gửi từ form
+        $validatedData = $request->validate([
+            'project_id' => 'required',
+            'task_name' => 'required|string|max:255',
+            'task_description' => 'nullable|string',
+            'status_key' => 'required',
+            'assigned_to_user_id' => 'nullable|exists:users,id',
+            'deadline' => 'nullable|date',
+        ]);
+
+        // Tạo task mới
+        $task = Task::create($validatedData);
+        return response()->json($task, 201);
+    }
+
+    /**
+     * Display the specified task.
+     */
+    public function show($id)
+    {
+        // Tìm task theo ID
+        $task = Task::with('project')->find($id);
+
+        if (!$task) {
+            return response()->json(['error' => 'Task not found'], 404);
+        }
+
+        // Khởi tạo dữ liệu phản hồi
+        $response = [
+            'task' => [
+                'id' => strval($task->task_id),
+                'content' => $task->task_name,
+                'project_id' => $task->project_id,
+                'project_name' => $task->getProjectName(),
+                'description' => $task->task_description,
+                'user_count' => $task->users->count(),
+                'users' => $task->users->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                    ];
+                }),
+                'deadline' => $task->formatted_deadline,
+                'status' => $task->status_key,
+                'is_late' => $task->is_late,
+                'is_near_deadline' => $task->is_near_deadline,
+            ],
+            'project' => [
+                'id' => $task->project_id,
+                'name' => $task->getProjectName(),
+            ]
+        ];
+
+        return response()->json($response);
+    }
+
 
     
     private function addTaskToResponse($task, &$response)
