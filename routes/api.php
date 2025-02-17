@@ -23,7 +23,7 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
-    Route::get('/projects/deleted/{user_id}', [ProjectController::class, 'getDeletedProjects']);
+    Route::middleware(['auth:sanctum'])->get('/v1/projects/history', [ProjectController::class, 'getDeletedProjects']);
     Route::delete('/projects/permanently-delete/{id}', [ProjectController::class, 'permanentlyDeleteProject']);
     Route::get('/projects/restore/{id}', [ProjectController::class, 'restoreProject']);
     Route::post('/projects/{projectId}/users', [ProjectController::class, 'addUserToProject']);

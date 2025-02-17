@@ -115,8 +115,10 @@ class ProjectController extends Controller
 
     //show all user delete
 
-    public function getDeletedProjects(string $user_id)
+    public function getDeletedProjects(Request $request)
     {
+        // lấy id user từ xác thực sanscum
+        $user_id = $request->user()->id;
         // Lấy các dự án đã bị xóa cho người quản lý dự án
         $deletedProjects = Project::deletedProjectsByUser($user_id)->get();
 
