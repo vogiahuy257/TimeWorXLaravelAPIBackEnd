@@ -176,7 +176,7 @@ class ProjectController extends Controller
         $project = Project::onlyTrashed()->findOrFail($id);
         $project->forceDelete();
         
-        return response()->json(['message' => 'Project permanently deleted'], 200);
+        return response()->json();
     }
 
     public function restoreProject(string $id)
@@ -184,7 +184,7 @@ class ProjectController extends Controller
         $project = Project::onlyTrashed()->findOrFail($id);
         $project->restore();
     
-        return response()->json(['message' => 'Project restored successfully'], 200);
+        return response()->json();
     }
 
     //thêm người dùng vào dự án

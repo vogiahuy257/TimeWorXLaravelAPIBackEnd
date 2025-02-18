@@ -24,8 +24,8 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
     Route::middleware(['auth:sanctum'])->get('/v1/projects/history', [ProjectController::class, 'getDeletedProjects']);
-    Route::delete('/projects/permanently-delete/{id}', [ProjectController::class, 'permanentlyDeleteProject']);
-    Route::get('/projects/restore/{id}', [ProjectController::class, 'restoreProject']);
+    Route::delete('/v1/projects/permanently-delete/{id}', [ProjectController::class, 'permanentlyDeleteProject']);
+    Route::middleware(['auth:sanctum'])->put('/v1/projects/restore/{id}', [ProjectController::class, 'restoreProject']);
     Route::post('/projects/{projectId}/users', [ProjectController::class, 'addUserToProject']);
     Route::put('/projects/{projectId}/user-role', [ProjectController::class, 'updateUserRoleInProject']);
     Route::middleware(['auth:sanctum'])->get('/v1/projects/statistics', [ProjectController::class, 'getStatisticsOfTasks']);
@@ -40,10 +40,10 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::post('/project-view/{project_id}/tasks', [ProjectControllerView::class, 'createTaskToProject']);
     Route::middleware(['auth:sanctum'])->put('/project-view/{projectId}/tasks/{taskId}', [ProjectControllerView::class, 'updateTaskProject']);
 
-    Route::get('/project-view/{projectId}/deleted-tasks', [ProjectControllerView::class, 'getDeletedTasks']);
+    Route::middleware(['auth:sanctum'])->get('/v1/project-view/{projectId}/deleted-tasks', [ProjectControllerView::class, 'getDeletedTasks']);
 
-    Route::put('/project-view/tasks/{taskId}/restore', [ProjectControllerView::class, 'restoreTask']); 
-    Route::delete('/project-view/tasks/{taskId}/force-delete', [ProjectControllerView::class, 'forceDeleteTask']); 
+    Route::middleware(['auth:sanctum'])->put('/v1/project-view/tasks/{taskId}/restore', [ProjectControllerView::class, 'restoreTask']); 
+    Route::middleware(['auth:sanctum'])->delete('/v1/project-view/tasks/{taskId}/force-delete', [ProjectControllerView::class, 'forceDeleteTask']); 
     Route::get('/project-view/{project_id}/users', [ProjectControllerView::class, 'getUsersByProject']);
 
     // Task
@@ -78,8 +78,8 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::apiResource('personal-plans', PersonalPlanController::class);
     Route::put('/personal-plans/{id}/status', [PersonalPlanController::class, 'updateStatus']);
     Route::middleware(['auth:sanctum'])->get('/v1/personal-plans/trashed', [PersonalPlanController::class, 'trashed']);
-    Route::post('/personal-plans/{id}/restore', [PersonalPlanController::class, 'restore']);
-    Route::delete('/personal-plans/{id}/force-delete', [PersonalPlanController::class, 'forceDelete']);
+    Route::middleware(['auth:sanctum'])->post('/v1/personal-plans/{id}/restore', [PersonalPlanController::class, 'restore']);
+    Route::middleware(['auth:sanctum'])->delete('/v1/personal-plans/{id}/force-delete', [PersonalPlanController::class, 'forceDelete']);
 
     // Route User
     Route::apiResource('users', UserController::class);

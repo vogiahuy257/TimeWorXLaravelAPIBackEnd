@@ -179,6 +179,7 @@ class ProjectControllerView extends Controller
         return response()->json();
     }
 
+    // trả về danh sách các task bị xóa mềm
     public function getDeletedTasks($projectId)
     {
         $deletedTasks = Task::onlyTrashed()->where('project_id', $projectId)->get();
@@ -186,6 +187,7 @@ class ProjectControllerView extends Controller
         return response()->json($deletedTasks);
     }
 
+    // khôi phục lại task bị xóa mềm
     public function restoreTask($id)
     {
         $task = Task::onlyTrashed()->find($id);
@@ -199,6 +201,7 @@ class ProjectControllerView extends Controller
         return response()->json();
     }
 
+    // xóa vĩnh viễn task
     public function forceDeleteTask($id)
     {
         $task = Task::onlyTrashed()->find($id);
