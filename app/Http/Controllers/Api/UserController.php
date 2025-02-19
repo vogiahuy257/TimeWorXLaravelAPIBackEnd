@@ -38,11 +38,18 @@ class UserController extends Controller
         return response()->json($users);
     }
 
+    // đang thiết kế project
+    // public function updateUser(Request $request)
+    // {
+    //     $user = $request->user()->id;
+    //     $data = $request->validate([
+    //         'name' => 'required|string|max:255',
+    //         'email' => 'required|email|max:255',
+    //     ]);
+    //     $user->update($data);
 
-    public function showUserToTask($task_id)
-    {
-        
-    }
+    //     return response()->json(['message' => 'Profile updated successfully!']);
+    // }
 
     /**
      * Store a newly created resource in storage.

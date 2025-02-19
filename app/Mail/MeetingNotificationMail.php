@@ -32,8 +32,10 @@ class MeetingNotificationMail extends Mailable implements ShouldQueue
     {
         return $this->subject('New Meeting Scheduled: ' . $this->meeting->meeting_name)
                     ->view('emails.meeting_notification')
-                    ->with([
-                        'meeting' => $this->meeting,
+                    ->with(['meeting' => $this->meeting])
+                    ->attach(public_path('image/logo-small.svg'), [
+                        'as' => 'logo.svg',
+                        'mime' => 'image/svg+xml',
                     ]);
-    }
+        }
 }

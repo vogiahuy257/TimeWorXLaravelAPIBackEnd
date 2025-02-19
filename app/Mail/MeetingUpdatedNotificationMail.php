@@ -34,6 +34,9 @@ class MeetingUpdatedNotificationMail extends Mailable implements ShouldQueue
                     ->view('emails.meeting_updated_notification')
                     ->with([
                         'meeting' => $this->meeting,
+                    ])->attach(public_path('image/logo-small.svg'), [
+                        'as' => 'logo.svg',
+                        'mime' => 'image/svg+xml',
                     ]);
     }
 }

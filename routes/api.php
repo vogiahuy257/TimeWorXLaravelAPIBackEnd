@@ -19,6 +19,8 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Route::middleware('auth:sanctum')->post('/v1/user/update', [UserController::class, 'updateUser']);
+
 Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::class)->except(['index']);
     
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);

@@ -22,7 +22,7 @@
                 <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="container" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <tr>
                         <td style="background-color: #000000; padding: 28px; text-align: center;">
-                            <img src="https://drive.usercontent.google.com/download?id=1Ptnqw3NSDQrurTmoXvknlvdiqZlCv19d&export=view&authuser=0" alt="Company Logo" width="150" height="150" style="max-width: 100%; border-radius: 100%; height: auto; box-shadow: 0 0 6px rgba(255, 255, 255, 0.726);">
+                            <img src="cid:logo.svg" alt="Company Logo" width="150" height="150" style="max-width: 100%; border-radius: 100%; height: auto;">
                         </td>
                     </tr>
                     <tr>
