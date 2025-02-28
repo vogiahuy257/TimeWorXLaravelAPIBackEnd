@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -38,60 +39,48 @@ class UserController extends Controller
         return response()->json($users);
     }
 
-    // đang thiết kế project
-    // public function updateUser(Request $request)
-    // {
-    //     $user = $request->user()->id;
-    //     $data = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'email' => 'required|email|max:255',
-    //     ]);
-    //     $user->update($data);
-
-    //     return response()->json(['message' => 'Profile updated successfully!']);
-    // }
-
     /**
-     * Store a newly created resource in storage.
+     * Cập nhật thông tin người dùng.
      */
-    public function store(Request $request)
+    public function update(Request $request)
     {
-        //
-    }
+        $user = $request->user();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        $data = $request->only(['name', 'google_id']);
+        
+        // Xác thực dữ liệu đầu vào
+        $validator = Validator::make($data, [
+            'name' => 'nullable|string|max:255',
+            'google_id' => 'nullable|string|unique:users,google_id,' . $user->id,
+        ]);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'User profile updated successfully',
+            'user' => $user
+        ]);
     }
 
     // Phương thức lấy tất cả tên các task mà user tham gia
     public function getAllTaskNameToUser(Request $request)
-    {
-        $userId = $request->user()->id;
-        $user = User::where('id', $userId)->firstOrFail(); 
+    {; 
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         $taskNames = $user->getAllTaskNames(); 
 
         return response()->json([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'name' => $user->name,
             'tasks' => $taskNames
         ]);

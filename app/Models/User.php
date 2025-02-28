@@ -1,8 +1,7 @@
 <?php
 
 namespace App\Models;
-
-//use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens; // Import SoftDeletes trait
 use Illuminate\Support\Str;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable, SoftDeletes,HasApiTokens; // Add SoftDeletes trait
 
@@ -26,6 +25,15 @@ class User extends Authenticatable
                 $user->id = (string) Str::uuid(); // Tự động gán UUID cho user_id
             }
         });
+
+        static::created(function ($user) {
+            if (!$user->setting) {
+                $user->setting()->create([
+                    'language' => 'en',
+                    'color_system' => 'light-mode',
+                ]);
+            }
+        });        
     }
 
     /**
@@ -38,6 +46,8 @@ class User extends Authenticatable
         'email',
         'password',
         'profile_picture',
+        'google_id',// id google
+        'facebook_id', // id auth facebook
         'role', // Add role_id to fillable
     ];
 
@@ -108,5 +118,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Meeting::class, 'meeting_user', 'user_id', 'meeting_id');
     }
+
+    public function setting()
+    {
+        return $this->hasOne(Setting::class, 'user_id');
+    }
+
 
 }

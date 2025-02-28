@@ -14,6 +14,7 @@ use App\Http\Controllers\API\CalendarController;
 use App\Http\Controllers\API\MeetingController;
 use App\Http\Controllers\API\SummaryReportController;
 use App\Http\Controllers\API\FileController;
+use App\Http\Controllers\Api\SettingController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -109,3 +110,9 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     });
 
     Route::middleware(['auth:sanctum'])->get('/files/download', [FileController::class, 'downloadFile']);
+
+    // setting system controller
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/v1/settings', [SettingController::class, 'show']); // Lấy setting
+        Route::put('/v1/settings', [SettingController::class, 'update']); // Cập nhật setting
+    });

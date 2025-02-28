@@ -17,21 +17,14 @@ class Setting extends Model
     protected $table = 'settings';
 
     /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'setting_id';
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
         'user_id',
-        'setting_key',
-        'setting_value',
+        'language',
+        'color_system',
     ];
 
     /**
@@ -51,4 +44,5 @@ class Setting extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
 }
