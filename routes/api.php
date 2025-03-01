@@ -113,6 +113,23 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
 
     // setting system controller
     Route::middleware(['auth:sanctum'])->group(function () {
+        // Lấy và cập nhật cài đặt chung của user
         Route::get('/v1/settings', [SettingController::class, 'show']); // Lấy setting
         Route::put('/v1/settings', [SettingController::class, 'update']); // Cập nhật setting
+    
+        // Cập nhật tên user
+        Route::put('/v1/settings/update-name', [SettingController::class, 'updateUserName']);
+    
+        // Cập nhật email user
+        Route::put('/v1/settings/update-email', [SettingController::class, 'updateUserEmail']);
+    
+        // Cập nhật ảnh đại diện user
+        Route::post('/v1/settings/update-profile-picture', [SettingController::class, 'updateUserProfilePicture']);
+    
+        // Cập nhật mật khẩu user
+        Route::put('/v1/settings/update-password', [SettingController::class, 'updateUserPassword']);
+    
+        // Xóa tài khoản user
+        Route::delete('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
     });
+    

@@ -1,54 +1,44 @@
 <?php
 
 namespace App\Http\Controllers;
-use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+
+use App\Services\GoogleAuthService;
+use Illuminate\Http\Request;
 
 class GoogleAuthController extends Controller
 {
-    public function redirect()
+    protected $googleAuthService;
+
+    public function __construct(GoogleAuthService $googleAuthService)
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        $this->googleAuthService = $googleAuthService;
     }
 
+    /**
+     * Chuyển hướng đến Google để xác thực
+     */
+    public function redirect()
+    {
+        return $this->googleAuthService->redirectToGoogle();
+    }
+
+    /**
+     * Xử lý callback từ Google
+     */
     public function callback()
     {
-        try{
-            $googleUser = Socialite::driver('google')->stateless()->user();
-            
-            // Kiểm tra xem user có đăng nhập bằng Google trước đó không
-            $user = User::where('google_id', $googleUser->getId())->first();
-            if ($user)
-            {
-                Auth::login($user);
-                return redirect(env('FRONTEND_URL') . '/dashboard/home');
-            }
+        $result = $this->googleAuthService->handleGoogleCallback();
 
-            // ✅ Thông báo email đã đăng ký
-            $user = User::where('email', $googleUser->getEmail())->first();
-            if ($user && !$user->google_id) {
-                return redirect(env('FRONTEND_URL') . '/login?error=email-exists'); 
-            }
+        return redirect($result['redirect']);
+    }
 
-            if(!$user)
-            {
-                $user = User::create([
-                    'name' => $googleUser->getName(),
-                    'email' => $googleUser->getEmail(),
-                    'password' => Hash::make(uniqid()), // ✅ Tạo password ngẫu nhiên để tránh lộ dữ liệu
-                    'google_id' => $googleUser->getId(),
-                    'email_verified_at' => now(),
-                    'profile_picture' => $googleUser->getAvatar(),
-                    'role' => 'User'
-                ]);  
-            }
-            Auth::login($user);
-            return redirect(env('FRONTEND_URL') . '/dashboard/home');
-        }
-        catch (\Exception $e){
-            dd($e);
-        }
+    /**
+     * Liên kết tài khoản Google với tài khoản hiện tại
+     */
+    public function linkGoogleAccount()
+    {
+        $result = $this->googleAuthService->linkGoogleAccount();
+
+        return redirect($result['redirect']);
     }
 }

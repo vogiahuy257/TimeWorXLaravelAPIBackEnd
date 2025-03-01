@@ -42,33 +42,33 @@ class UserController extends Controller
     /**
      * Cập nhật thông tin người dùng.
      */
-    public function update(Request $request)
-    {
-        $user = $request->user();
+    // public function update(Request $request)
+    // {
+    //     $user = $request->user();
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
+    //     if (!$user) {
+    //         return response()->json(['message' => 'Unauthorized'], 401);
+    //     }
 
-        $data = $request->only(['name', 'google_id']);
+    //     $data = $request->only(['name', 'google_id']);
         
-        // Xác thực dữ liệu đầu vào
-        $validator = Validator::make($data, [
-            'name' => 'nullable|string|max:255',
-            'google_id' => 'nullable|string|unique:users,google_id,' . $user->id,
-        ]);
+    //     // Xác thực dữ liệu đầu vào
+    //     $validator = Validator::make($data, [
+    //         'name' => 'nullable|string|max:255',
+    //         'google_id' => 'nullable|string|unique:users,google_id,' . $user->id,
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 422);
+    //     }
 
-        $user->update($data);
+    //     $user->update($data);
 
-        return response()->json([
-            'message' => 'User profile updated successfully',
-            'user' => $user
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'User profile updated successfully',
+    //         'user' => $user
+    //     ]);
+    // }
 
     // Phương thức lấy tất cả tên các task mà user tham gia
     public function getAllTaskNameToUser(Request $request)
