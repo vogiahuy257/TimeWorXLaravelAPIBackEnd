@@ -46,7 +46,7 @@ class ProfilePictureService
             }
 
             // Cập nhật đường dẫn mới vào database
-            $user->profile_picture = $storedPath;
+            $user->profile_picture = asset('storage/' . $storedPath);
             $user->save();
 
             return [

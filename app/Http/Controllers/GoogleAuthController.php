@@ -17,28 +17,26 @@ class GoogleAuthController extends Controller
     /**
      * Chuyển hướng đến Google để xác thực
      */
-    public function redirect()
+    public function redirect(Request $request)
     {
-        return $this->googleAuthService->redirectToGoogle();
+        $mode = $request->query('mode', 'login'); // Mặc định là login nếu không có mode
+        return $this->googleAuthService->redirectToGoogle($mode);
     }
 
     /**
-     * Xử lý callback từ Google
+     * Xử lý callback từ Google (phân biệt đăng nhập và liên kết tài khoản)
      */
-    public function callback()
+    public function callback(Request $request)
     {
-        $result = $this->googleAuthService->handleGoogleCallback();
-
-        return redirect($result['redirect']);
+        try {
+            $result = $this->googleAuthService->handleGoogleCallback();
+            return redirect($result['redirect']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error while authenticating Google account',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Liên kết tài khoản Google với tài khoản hiện tại
-     */
-    public function linkGoogleAccount()
-    {
-        $result = $this->googleAuthService->linkGoogleAccount();
-
-        return redirect($result['redirect']);
-    }
 }

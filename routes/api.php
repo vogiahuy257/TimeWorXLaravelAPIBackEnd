@@ -124,12 +124,14 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
         Route::put('/v1/settings/update-email', [SettingController::class, 'updateUserEmail']);
     
         // Cập nhật ảnh đại diện user
+        // chưa làm
         Route::post('/v1/settings/update-profile-picture', [SettingController::class, 'updateUserProfilePicture']);
     
         // Cập nhật mật khẩu user
         Route::put('/v1/settings/update-password', [SettingController::class, 'updateUserPassword']);
     
         // Xóa tài khoản user
+        // chưa làm
         Route::delete('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
     });
     

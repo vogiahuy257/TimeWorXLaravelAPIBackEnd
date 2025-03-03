@@ -13,9 +13,13 @@ class GoogleAuthService
     /**
      * Chuyển hướng người dùng đến Google để xác thực
      */
-    public function redirectToGoogle()
+    public function redirectToGoogle($mode = 'login')
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        $state = json_encode(['mode' => $mode]); // Mã hóa mode vào state
+        return Socialite::driver('google')
+            ->stateless()
+            ->with(['state' => $state])
+            ->redirect();
     }
 
     /**
@@ -25,76 +29,79 @@ class GoogleAuthService
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
+            $state = request()->input('state');
+            $mode = 'login'; // Mặc định là đăng nhập nếu không có state
 
-            // Kiểm tra nếu user đã đăng nhập bằng Google trước đó
-            $user = User::where('google_id', $googleUser->getId())->first();
-            if ($user) {
-                Auth::login($user);
-                return ['redirect' => env('FRONTEND_URL') . '/dashboard/home'];
+            if ($state) {
+                $decodedState = json_decode(urldecode($state), true);
+                $mode = $decodedState['mode'] ?? 'login';
             }
 
-            // Kiểm tra email có tồn tại nhưng chưa liên kết Google
-            $user = User::where('email', $googleUser->getEmail())->first();
-            if ($user && !$user->google_id) {
-                return ['redirect' => env('FRONTEND_URL') . '/login?error=email-exists'];
+            if ($mode === 'link') {
+                return $this->linkGoogleAccount($googleUser); // Truyền $googleUser vào
+            } else {
+                return $this->loginOrRegisterGoogleUser($googleUser);
             }
+        } catch (\Exception $e) {
+            return ['redirect' => env('FRONTEND_URL') . '/login?error=google-auth-failed'];
+        }
+    }
 
-            // Nếu chưa có tài khoản, tạo mới
-            if (!$user) {
-                $user = User::create([
-                    'name'              => $googleUser->getName(),
-                    'email'             => $googleUser->getEmail(),
-                    'password'          => Hash::make(uniqid()), // Mật khẩu ngẫu nhiên
-                    'google_id'         => $googleUser->getId(),
-                    'email_verified_at' => now(),
-                    'profile_picture'   => $googleUser->getAvatar(),
-                    'role'              => 'User'
-                ]);
-            }
-
+    private function loginOrRegisterGoogleUser($googleUser)
+    {
+        $user = User::where('google_id', $googleUser->getId())->first();
+        if ($user) {
             Auth::login($user);
             return ['redirect' => env('FRONTEND_URL') . '/dashboard/home'];
+        }
 
-        } catch (\Exception $e) {
+        $user = User::where('email', $googleUser->getEmail())->first();
+        if ($user && !$user->google_id) {
             return ['redirect' => env('FRONTEND_URL') . '/login?error=email-exists'];
         }
+
+        if (!$user) {
+            $user = User::create([
+                'name'              => $googleUser->getName(),
+                'email'             => $googleUser->getEmail(),
+                'password'          => Hash::make(uniqid()), // Mật khẩu ngẫu nhiên
+                'google_id'         => $googleUser->getId(),
+                'email_verified_at' => now(),
+                'profile_picture'   => $googleUser->getAvatar(),
+                'role'              => 'User'
+            ]);
+        }
+
+        Auth::login($user);
+        return ['redirect' => env('FRONTEND_URL') . '/dashboard/home'];
     }
 
     /**
      * Liên kết tài khoản Google với tài khoản hiện tại
      */
-    public function linkGoogleAccount()
+    private function linkGoogleAccount($googleUser)
     {
-        try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
-            $user = Auth::user();
-
-            if (!$user) {
-                return ['redirect' => env('FRONTEND_URL') . '/login?error=not-authenticated'];
-            }
-
-            // Kiểm tra nếu Google ID đã liên kết với tài khoản khác
-            $existingGoogleUser = User::where('google_id', $googleUser->getId())->first();
-            if ($existingGoogleUser && $existingGoogleUser->id !== $user->id) {
-                return ['redirect' => env('FRONTEND_URL') . '/settings/user?error=google-linked'];
-            }
-
-            // Kiểm tra email có khớp không
-            if ($user->email !== $googleUser->getEmail()) {
-                return ['redirect' => env('FRONTEND_URL') . '/settings/user?error=email-mismatch'];
-            }
-
-            // Cập nhật tài khoản
-            $user->google_id = $googleUser->getId();
-            if (!$user->profile_picture || !Storage::disk('public')->exists($user->profile_picture)) {
-                $user->profile_picture = $googleUser->getAvatar();
-            }
-            $user->save();
-
-            return ['redirect' => env('FRONTEND_URL') . '/settings/user?success=google-linked'];
-
-        } catch (\Exception $e) {
-            return ['redirect' => env('FRONTEND_URL') . '/settings/user?error=google-failed'];
+        $user = Auth::user();
+        if (!$user) {
+            return ['redirect' => env('FRONTEND_URL') . '/login?error=not-authenticated'];
         }
+
+        $existingGoogleUser = User::where('google_id', $googleUser->getId())->first();
+        if ($existingGoogleUser && $existingGoogleUser->id !== $user->id) {
+            return ['redirect' => env('FRONTEND_URL') . '/setting/user?error=google-linked'];
+        }
+
+        if ($user->email !== $googleUser->getEmail()) {
+            return ['redirect' => env('FRONTEND_URL') . '/setting/user?error=email-mismatch'];
+        }
+
+        $user->google_id = $googleUser->getId();
+        if (!$user->profile_picture || !Storage::disk('public')->exists($user->profile_picture)) {
+            $user->profile_picture = $googleUser->getAvatar();
+        }
+        $user->save();
+
+        return ['redirect' => env('FRONTEND_URL') . '/setting/user?success=google-linked'];
     }
+
 }
