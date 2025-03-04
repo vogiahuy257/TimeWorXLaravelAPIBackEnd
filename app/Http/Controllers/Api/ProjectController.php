@@ -78,9 +78,12 @@ class ProjectController extends Controller
         $validated['project_manager'] = $request->user()->id;
 
         // Tạo dự án mới
-        Project::create($validated);
+        $project = Project::create($validated);
 
-        return response()->json();
+        return response()->json([
+            'message' => 'Project created successfully',
+            'project' => $project
+        ]);
     }
 
     /**

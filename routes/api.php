@@ -132,6 +132,6 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     
         // Xóa tài khoản user
         // chưa làm
-        Route::delete('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
+        Route::post('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
     });
     

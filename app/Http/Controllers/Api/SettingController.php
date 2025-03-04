@@ -171,11 +171,12 @@ class SettingController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect(env('FRONTEND_URL') . '/login');
+            return response()->json(['message' => 'Account deleted successfully'], 200);
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json(['message' => 'Error deleting account', 'error' => $e->getMessage()], 500);
         }
     }
+
 }
