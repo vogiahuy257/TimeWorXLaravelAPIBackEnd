@@ -24,7 +24,8 @@ class DatabaseSeeder extends Seeder
             EmployeePerformanceTableSeeder::class,
             PersonalPlansTableSeeder::class,
             ReportsTableSeeder::class,
-            TaskUserTableSeeder::class
+            TaskUserTableSeeder::class,
+            SummaryReportSeeder::class,
         ]);
     }
 }

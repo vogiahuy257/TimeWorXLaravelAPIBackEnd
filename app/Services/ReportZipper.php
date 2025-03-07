@@ -39,15 +39,15 @@ class ReportZipper
         }
         
         // Đường dẫn lưu file ZIP
-        $zipPath = storage_path("app/{$this->storagePath}/{$zipFileName}");
+        $zipPath = Storage::disk($this->storageDisk)->path("{$this->storagePath}/{$zipFileName}");
 
 
         // Mở file ZIP
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
             foreach ($files as $filePath => $fileNameInZip) {
-                if (file_exists($filePath)) {
-                    $zip->addFile($filePath, $fileNameInZip);
+                if (Storage::disk($this->storageDisk)->exists($filePath)) {
+                    $zip->addFile(Storage::disk($this->storageDisk)->path($filePath), $fileNameInZip);
                 } else {
                     throw new \Exception("File not found: {$filePath}");
                 }

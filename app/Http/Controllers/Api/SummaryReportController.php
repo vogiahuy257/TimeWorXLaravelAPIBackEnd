@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SummaryReport;
-use App\Http\Requests\CreateSummaryReportRequest;
 use Illuminate\Http\Request;
 use App\Services\ReportZipper;
+use Illuminate\Support\Facades\DB;
 
 class SummaryReportController extends Controller
 {
@@ -19,66 +19,70 @@ class SummaryReportController extends Controller
 
     /**
      * Tạo báo cáo tổng hợp và nén file.
-     *
-     * @param CreateSummaryReportRequest $request
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function createSummaryReport(CreateSummaryReportRequest $request)
+    public function createSummaryReport(Request $request)
     {
         try {
             $validated = $request->validated();
-
-            // Lấy user_id từ Auth
-            $userId = $request->user()->id; // Lấy ID của người dùng đã xác thực qua Sanctum
-
-            // Thêm user_id vào dữ liệu validated
+            $userId = $request->user()->id;
             $validated['reported_by_user_id'] = $userId;
+            $reportFiles = $validated['report_files'] ?? [];
 
-            // Gọi hàm createWithZip để tạo báo cáo và file ZIP
-            $summaryReport = SummaryReport::createWithZip($validated, $this->zipper);
+            if (!is_array($validated['report_files'])) {
+                return response()->json(['message' => 'Invalid format for report files.'], 400);
+            }
 
-            return response()->json([
-                'message' => 'Summary report created successfully!',
-                'summary_report' => $summaryReport,
-            ]);
+            return DB::transaction(function () use ($validated, $reportFiles) {
+                $zipFileName = null;
+                $zipFilePath = null;
+    
+                // 📌 Chỉ tạo file ZIP nếu có tài liệu đính kèm
+                if (!empty($reportFiles)) {
+                    $zipFileName = 'summary_report_' . time() . '.zip';
+                    $zipFilePath = $this->zipper->createZip($zipFileName, $reportFiles);
+                }
+    
+                $summaryReport = SummaryReport::create([
+                    'name' => $validated['name'],
+                    'description' => $validated['description'],
+                    'report_date' => $validated['report_date'],
+                    'project_id' => $validated['project_id'] ?? null,
+                    'project_name' => $validated['project_name'] ?? null,
+                    'project_description' => $validated['project_description'] ?? null,
+                    'reported_by_user_id' => $validated['reported_by_user_id'],
+                    'zip_file_path' => $zipFilePath,
+                    'zip_name' => $zipFileName,
+                ]);
+    
+                return response()->json([
+                    'message' => 'Summary report created successfully!',
+                    'summary_report' => $summaryReport
+                ]);
+            });
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create summary report.',
-                'error' => $e->getMessage(),
-            ], 500);
+            \Log::error('Error creating summary report: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to create summary report.', 'error' => $e->getMessage()], 500);
         }
     }
 
-
     /**
      * Lấy danh sách summary reports với tìm kiếm và bộ lọc.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function getSummaryReports(Request $request)
     {
-        $userId = $request->user()->id; // Lấy user ID từ Auth
-        if (!$userId) {
-            return response()->json([
-                'message' => 'Unauthorized access. User not authenticated.',
-            ], 401); // Trả về mã lỗi 401 nếu không xác thực
-        }
+        $userId = $request->user()->id;
 
-        // Lấy dữ liệu tìm kiếm và lọc
-        $search = $request->input('search', null); // Tìm kiếm theo tên báo cáo
-        $startDate = $request->input('start_date', null); // Ngày bắt đầu
-        $endDate = $request->input('end_date', null); // Ngày kết thúc
+        $search = $request->input('search', null);
+        $startDate = $request->input('start_date', null);
+        $endDate = $request->input('end_date', null);
+        $perPage = $request->input('per_page', 10);
 
-        // Query cơ bản
         $query = SummaryReport::where('reported_by_user_id', $userId);
 
-        // Tìm kiếm theo tên
         if ($search) {
             $query->where('name', 'LIKE', '%' . $search . '%');
         }
 
-        // Bộ lọc theo ngày
         if ($startDate) {
             $query->where('report_date', '>=', $startDate);
         }
@@ -86,49 +90,100 @@ class SummaryReportController extends Controller
             $query->where('report_date', '<=', $endDate);
         }
 
-        // Phân trang kết quả
-        $summaryReports = $query->orderBy('report_date', 'desc')->paginate(10);
+        $summaryReports = $query->orderBy('report_date', 'desc')->paginate($perPage);
 
         return response()->json($summaryReports);
     }
 
     /**
      * Lấy thông tin chi tiết của một summary report.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function getSummaryReportById(Request $request,int $id)
+    public function getSummaryReportById(Request $request, int $id)
     {
-        $userId = $request->user()->id; // Lấy user ID từ Auth
-        if (!$userId) {
-            return response()->json([
-                'message' => 'Unauthorized access. User not authenticated.',
-            ], 401); // Trả về mã lỗi 401 nếu không xác thực
-        }
-        try {
-            // Tìm summary report theo id
-            $summaryReport = SummaryReport::where('summary_report_id', $id)
+        $userId = $request->user()->id;
+        
+        $summaryReport = SummaryReport::where('id', $id)
             ->where('reported_by_user_id', $userId)
             ->first();
 
-            // Kiểm tra nếu không tìm thấy báo cáo hoặc báo cáo không thuộc về user này
-            if (!$summaryReport) {
-                return response()->json([
-                    'message' => 'Forbidden. You do not have access to this report.',
-                ], 403); // Trả về mã lỗi 403 nếu không có quyền truy cập
-            }
-
-            return response()->json([
-                'message' => 'Summary report fetched successfully!',
-                'summary_report' => $summaryReport,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to fetch summary report.',
-                'error' => $e->getMessage(),
-            ], 404); // 404 nếu không tìm thấy
+        if (!$summaryReport) {
+            return response()->json(['message' => 'Report not found or unauthorized access.'], 403);
         }
+
+        return response()->json(['message' => 'Summary report fetched successfully!', 'summary_report' => $summaryReport]);
     }
 
+    /**
+     * API để tải file ZIP của báo cáo tổng hợp.
+     */
+    public function downloadSummaryReportZip(Request $request, int $id)
+    {
+        $userId = $request->user()->id;
+
+        $summaryReport = SummaryReport::where('id', $id)
+            ->where('reported_by_user_id', $userId)
+            ->first();
+
+        if (!$summaryReport || !$summaryReport->zip_file_path) {
+            return response()->json(['message' => 'Report or ZIP file not found.'], 403);
+        }
+
+        $filePath = storage_path('app/' . $summaryReport->zip_file_path);
+
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'ZIP file does not exist.'], 404);
+        }
+
+        return response()->download($filePath, $summaryReport->zip_name);
+    }
+
+    /**
+     * Xóa mềm (đưa vào thùng rác)
+     */
+    public function softDeleteSummaryReport(Request $request, int $id)
+    {
+        $userId = $request->user()->id;
+
+        $summaryReport = SummaryReport::where('id', $id)
+            ->where('reported_by_user_id', $userId)
+            ->first();
+
+        if (!$summaryReport) {
+            return response()->json(['message' => 'Report not found.'], 403);
+        }
+
+        $summaryReport->delete();
+
+        return response()->json(['message' => 'Summary report moved to trash successfully!']);
+    }
+
+    /**
+     * Xóa vĩnh viễn (xóa hoàn toàn, kể cả file ZIP)
+     */
+    public function permanentlyDeleteSummaryReport(Request $request, int $id)
+    {
+        $userId = $request->user()->id;
+
+        $summaryReport = SummaryReport::withTrashed()
+            ->where('id', $id)
+            ->where('reported_by_user_id', $userId)
+            ->first();
+
+        if (!$summaryReport) {
+            return response()->json(['message' => 'Report not found.'], 403);
+        }
+
+        return DB::transaction(function () use ($summaryReport) {
+            if ($summaryReport->zip_file_path) {
+                $filePath = storage_path('app/' . $summaryReport->zip_file_path);
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+
+            $summaryReport->forceDelete();
+
+            return response()->json(['message' => 'Summary report permanently deleted!']);
+        });
+    }
 }
