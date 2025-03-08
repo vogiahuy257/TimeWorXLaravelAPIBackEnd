@@ -144,7 +144,10 @@ class ProjectController extends Controller
     public function update(Request $request, string $id)
     {
         $user_id = $request->user()->id;
-        $project = Project::findOrFail($id);
+        $project = Project::find($id); 
+        if (!$project) {
+            return response()->json(['error' => 'Project not found'], 404);
+        }
 
         if (!$project->isUserProjectManager($user_id)) {
             return response()->json(['error' => 'Update false'], 403);
@@ -159,8 +162,10 @@ class ProjectController extends Controller
         ]);
 
         $project->update($validated);
+        $project->updateProjectStatus();
+        
 
-        return response()->json($project);
+        return response()->json(['project' => $project->fresh()]);
     }
 
     /**

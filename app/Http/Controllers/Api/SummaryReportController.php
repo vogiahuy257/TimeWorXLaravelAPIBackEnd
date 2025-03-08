@@ -71,22 +71,21 @@ class SummaryReportController extends Controller
     public function getSummaryReports(Request $request)
     {
         $userId = $request->user()->id;
-
-        $search = $request->input('search', null);
+        $search = trim(strtolower($request->input('search', null)));
         $startDate = $request->input('start_date', null);
         $endDate = $request->input('end_date', null);
-        $perPage = $request->input('per_page', 10);
+        $perPage = min($request->input('per_page', 10), 50); // Giới hạn tối đa 50
 
         $query = SummaryReport::where('reported_by_user_id', $userId);
 
         if ($search) {
-            $query->where('name', 'LIKE', '%' . $search . '%');
+            $query->whereRaw('LOWER(name) LIKE ?', ["%$search%"]); // Tìm kiếm không phân biệt hoa thường
         }
 
-        if ($startDate) {
+        if ($startDate && strtotime($startDate)) {
             $query->where('report_date', '>=', $startDate);
         }
-        if ($endDate) {
+        if ($endDate && strtotime($endDate)) {
             $query->where('report_date', '<=', $endDate);
         }
 
@@ -94,6 +93,7 @@ class SummaryReportController extends Controller
 
         return response()->json($summaryReports);
     }
+
 
     /**
      * Lấy thông tin chi tiết của một summary report.
