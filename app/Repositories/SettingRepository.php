@@ -23,6 +23,7 @@ class SettingRepository
         ], [
             'language' => 'en',
             'color_system' => 'light-mode',
+            'screen_mode' => 'default'
         ]);
     }
 
@@ -36,7 +37,7 @@ class SettingRepository
         if (!$setting) {
             return null;
         }
-
+        \Log::info($data);
         $setting->update($data);
 
         return $setting;

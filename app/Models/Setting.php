@@ -25,6 +25,7 @@ class Setting extends Model
         'user_id',
         'language',
         'color_system',
+        'screen_mode'
     ];
 
     /**

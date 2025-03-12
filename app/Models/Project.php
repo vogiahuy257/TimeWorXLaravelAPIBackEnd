@@ -275,5 +275,4 @@ class Project extends Model
             'done' => $totalCount > 0 ? round(($statusCounts['done'] ?? 0) / $totalCount * 100, 2) : 0,
         ];
     }
-
 }

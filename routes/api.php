@@ -22,7 +22,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 // Route::middleware('auth:sanctum')->post('/v1/user/update', [UserController::class, 'updateUser']);
 
-Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::class)->except(['index']);
+Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::class)->except(['index','edit','create']);
     
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
@@ -33,6 +33,8 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::put('/projects/{projectId}/user-role', [ProjectController::class, 'updateUserRoleInProject']);
     Route::middleware(['auth:sanctum'])->get('/v1/projects/statistics', [ProjectController::class, 'getStatisticsOfTasks']);
     Route::middleware(['auth:sanctum'])->post('/projects/{project_id}/statistics', [ProjectController::class, 'getProjectStatistics']);
+        // Lấy tất cả file liên quan đến task của một project
+        Route::middleware(['auth:sanctum'])->get('/v1/projects/{project_id}/files', [ProjectController::class, 'getAllFilerTaskToProject']);
 
     Route::delete('/v1/projects/{projectId}/remove-user', [ProjectController::class, 'removeUserFromProject']);
 

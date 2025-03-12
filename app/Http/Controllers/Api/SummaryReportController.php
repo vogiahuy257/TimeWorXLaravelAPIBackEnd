@@ -7,7 +7,8 @@ use App\Models\SummaryReport;
 use Illuminate\Http\Request;
 use App\Services\ReportZipper;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\Project;
+use App\Models\File;
 class SummaryReportController extends Controller
 {
     protected ReportZipper $zipper;

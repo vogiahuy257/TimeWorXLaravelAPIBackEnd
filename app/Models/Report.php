@@ -94,4 +94,5 @@ class Report extends Model
             return $comment;
         });
     }
+
 }

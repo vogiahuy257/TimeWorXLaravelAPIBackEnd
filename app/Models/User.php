@@ -31,6 +31,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 $user->setting()->create([
                     'language' => 'en',
                     'color_system' => 'light-mode',
+                    'screen_mode' => 'default'
                 ]);
             }
         });        

@@ -34,7 +34,7 @@ class SettingController extends Controller
                 return response()->json(['message' => 'You are not logged in.'], 401);
             }
 
-            return response()->json($setting->only(['id', 'language', 'color_system']));
+            return response()->json($setting->only(['id', 'language', 'color_system','screen_mode']));
         } catch (Exception $e) {
             return response()->json(['message' => 'Error retrieving user settings', 'error' => $e->getMessage()], 500);
         }
@@ -48,6 +48,7 @@ class SettingController extends Controller
         $validatedData = $request->validate([
             'language' => 'nullable|string|max:10',
             'color_system' => 'nullable|string|max:50',
+            'screen_mode' => 'nullable|string|max:12'
         ]);
 
         $setting = $this->settingRepo->updateUserSetting($validatedData);
@@ -58,7 +59,7 @@ class SettingController extends Controller
 
         return response()->json([
             'message' => 'Setting updated successfully',
-            'data' => $setting->only(['id', 'language', 'color_system']),
+            'data' => $setting->only(['id', 'language', 'color_system','screen_mode']),
         ]);
     }
 

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('user_id')->unique(); // Đảm bảo mỗi user chỉ có 1 setting
             $table->string('language')->nullable();
             $table->string('color_system')->nullable();
+            $table->string('screen_mode')->default('default'); // 'default' hoặc 'full'
             $table->timestamps();
         
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
