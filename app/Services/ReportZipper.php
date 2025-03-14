@@ -16,7 +16,7 @@ class ReportZipper
      * @param string $storageDisk
      * @param string $storagePath
      */
-    public function __construct(string $storageDisk = 'local', string $storagePath = 'zipped_reports')
+    public function __construct(string $storageDisk = 'public', string $storagePath = 'zipped_reports')
     {
         $this->storageDisk = $storageDisk;
         $this->storagePath = $storagePath;
@@ -49,7 +49,7 @@ class ReportZipper
                 if (Storage::disk($this->storageDisk)->exists($filePath)) {
                     $zip->addFile(Storage::disk($this->storageDisk)->path($filePath), $fileNameInZip);
                 } else {
-                    throw new \Exception("File not found: {$filePath}");
+                    \Log::warning("File not found: {$filePath}");
                 }
             }
             $zip->close();

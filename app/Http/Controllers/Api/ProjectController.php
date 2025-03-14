@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Models\File;
+use App\Models\Report;
 
 class ProjectController extends Controller
 {
@@ -319,45 +318,8 @@ class ProjectController extends Controller
     
     public function getAllFilerTaskToProject(Request $request, int $project_id)
     {
-        $user_id = $request->user()->id;
-
-        // Kiểm tra quyền truy cập nhanh hơn bằng exists()
-        $hasAccess = Project::nonDeleted()
-            ->where('id', $project_id)
-            ->where(function ($query) use ($user_id) {
-                $query->where('project_manager', $user_id)
-                    ->orWhereHas('users', function ($query) use ($user_id) {
-                        $query->where('user_id', $user_id)
-                            ->where('is_project_manager', true);
-                    });
-            })
-            ->exists();
-
-        if (!$hasAccess) {
-            return response()->json(['message' => 'Project not found or access denied'], 404);
-        }
-
-        $files = File::whereHas('reports', function ($query) use ($project_id) {
-                $query->where('project_id', $project_id)
-                    ->orWhereHas('task', function ($taskQuery) use ($project_id) {
-                        $taskQuery->where('project_id', $project_id);
-                    });
-            })
-            ->with(['reports.task' => function ($query) {
-                $query->select('id', 'name'); // Chỉ lấy ID và tên của task
-            }])
-            ->select('file_id', 'name', 'type', 'path')
-            ->get()
-            ->map(function ($file) {
-                return [
-                    'id' => $file->file_id,
-                    'label' => $file->name,
-                    'type' => $file->type,
-                    'path' => $file->path,
-                    'taskName' => optional($file->reports->first()->task)->name, // Lấy taskName đầu tiên (nếu có)
-                ];
-            });
-        
+        $files = Report::getFilesByProject($project_id);
+    
         return response()->json($files);
     }
 }

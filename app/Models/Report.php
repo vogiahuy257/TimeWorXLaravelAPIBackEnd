@@ -95,4 +95,19 @@ class Report extends Model
         });
     }
 
+    /**
+     * Lấy tất cả các files liên quan đến reports của một project_id
+     *
+     * @param int $project_id
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getFilesByProject($project_id)
+    {
+        return File::whereHas('reports', function ($query) use ($project_id) {
+            $query->where('reports.project_id', $project_id); // Chỉ định rõ bảng `reports`
+        })->with(['reports' => function ($query) {
+            $query->select('reports.report_id', 'reports.task_id'); // Chỉ định rõ bảng `reports`
+        }])->select('files.file_id', 'files.name', 'files.type', 'files.path')->get(); // Chỉ định rõ bảng `files`
+    }
+
 }

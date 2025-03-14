@@ -7,8 +7,8 @@ use App\Models\SummaryReport;
 use Illuminate\Http\Request;
 use App\Services\ReportZipper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Project;
-use App\Models\File;
 class SummaryReportController extends Controller
 {
     protected ReportZipper $zipper;
@@ -24,47 +24,75 @@ class SummaryReportController extends Controller
     public function createSummaryReport(Request $request)
     {
         try {
-            $validated = $request->validated();
+            $validated = $request->validate([
+                'name' => 'required|string',
+                'report_date' => 'required|date',
+                'project_id' => 'nullable|integer',
+                'summary' => 'nullable|string',
+                'completed_tasks' => 'nullable|string',
+                'upcoming_tasks' => 'nullable|string',
+                'project_issues' => 'nullable|string',
+                'report_files' => 'array|nullable', // Cho phép null hoặc một mảng
+                'report_files.*.file_id' => 'nullable|integer', // Có thể null hoặc số nguyên
+                'report_files.*.path' => 'nullable|string', // Có thể null hoặc chuỗi
+                'report_files.*.file_name' => 'nullable|string', // Có thể null hoặc chuỗi
+            ]);            
+
             $userId = $request->user()->id;
             $validated['reported_by_user_id'] = $userId;
-            $reportFiles = $validated['report_files'] ?? [];
+            $storedFiles = [];
 
-            if (!is_array($validated['report_files'])) {
-                return response()->json(['message' => 'Invalid format for report files.'], 400);
+            foreach ($validated['report_files'] as $file) {
+                if (Storage::disk('public')->exists($file['path'])) {
+                    $storedFiles[$file['path']] = $file['file_name']; // Lưu key-value đúng format
+                }
             }
 
-            return DB::transaction(function () use ($validated, $reportFiles) {
+            if (!empty($validated['project_id'])) {
+                $project = Project::find($validated['project_id']);
+                if ($project) {
+                    $validated['project_name'] = $project->project_name;
+                    $validated['project_description'] = $project->project_description;
+                }
+            }
+
+            return DB::transaction(function () use ($validated, $storedFiles) {
                 $zipFileName = null;
                 $zipFilePath = null;
-    
-                // 📌 Chỉ tạo file ZIP nếu có tài liệu đính kèm
-                if (!empty($reportFiles)) {
+
+                // 📌 Tạo file ZIP nếu có file hợp lệ
+                if (!empty($storedFiles)) {
                     $zipFileName = 'summary_report_' . time() . '.zip';
-                    $zipFilePath = $this->zipper->createZip($zipFileName, $reportFiles);
+                    $zipFilePath = $this->zipper->createZip($zipFileName, $storedFiles);
                 }
-    
+
+                // 📌 Lưu vào database
                 $summaryReport = SummaryReport::create([
                     'name' => $validated['name'],
-                    'description' => $validated['description'],
                     'report_date' => $validated['report_date'],
                     'project_id' => $validated['project_id'] ?? null,
                     'project_name' => $validated['project_name'] ?? null,
                     'project_description' => $validated['project_description'] ?? null,
                     'reported_by_user_id' => $validated['reported_by_user_id'],
+                    'summary' => $validated['summary'] ?? null, // ✅ Bổ sung
+                    'completed_tasks' => $validated['completed_tasks'] ?? null, // ✅ Bổ sung
+                    'upcoming_tasks' => $validated['upcoming_tasks'] ?? null, // ✅ Bổ sung
+                    'project_issues' => $validated['project_issues'] ?? null, // ✅ Bổ sung
                     'zip_file_path' => $zipFilePath,
                     'zip_name' => $zipFileName,
-                ]);
-    
-                return response()->json([
-                    'message' => 'Summary report created successfully!',
-                    'summary_report' => $summaryReport
-                ]);
+                ]);                
+
+                return response()->json($summaryReport);
             });
         } catch (\Exception $e) {
             \Log::error('Error creating summary report: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to create summary report.', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to create summary report.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     /**
      * Lấy danh sách summary reports với tìm kiếm và bộ lọc.
