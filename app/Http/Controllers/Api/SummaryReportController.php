@@ -131,7 +131,7 @@ class SummaryReportController extends Controller
     {
         $userId = $request->user()->id;
         
-        $summaryReport = SummaryReport::where('id', $id)
+        $summaryReport = SummaryReport::where('summary_report_id', $id)
             ->where('reported_by_user_id', $userId)
             ->first();
 
@@ -139,7 +139,7 @@ class SummaryReportController extends Controller
             return response()->json(['message' => 'Report not found or unauthorized access.'], 403);
         }
 
-        return response()->json(['message' => 'Summary report fetched successfully!', 'summary_report' => $summaryReport]);
+        return response()->json( $summaryReport);
     }
 
     /**
