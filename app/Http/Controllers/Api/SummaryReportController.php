@@ -149,22 +149,21 @@ class SummaryReportController extends Controller
     {
         $userId = $request->user()->id;
 
-        $summaryReport = SummaryReport::where('id', $id)
+        $summaryReport = SummaryReport::where('summary_report_id', $id)
             ->where('reported_by_user_id', $userId)
             ->first();
 
-        if (!$summaryReport || !$summaryReport->zip_file_path) {
-            return response()->json(['message' => 'Report or ZIP file not found.'], 403);
+        if (!$summaryReport || !$summaryReport->zip_name) {
+            return response()->json(['message' => 'Report or ZIP file not found.'], 404);
         }
 
-        $filePath = storage_path('app/' . $summaryReport->zip_file_path);
-
-        if (!file_exists($filePath)) {
-            return response()->json(['message' => 'ZIP file does not exist.'], 404);
+        try {
+            return $this->zipper->downloadZip($summaryReport->zip_name);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
         }
-
-        return response()->download($filePath, $summaryReport->zip_name);
     }
+
 
     /**
      * Xóa mềm (đưa vào thùng rác)
@@ -173,7 +172,7 @@ class SummaryReportController extends Controller
     {
         $userId = $request->user()->id;
 
-        $summaryReport = SummaryReport::where('id', $id)
+        $summaryReport = SummaryReport::where('summary_report_id', $id)
             ->where('reported_by_user_id', $userId)
             ->first();
 
@@ -194,7 +193,7 @@ class SummaryReportController extends Controller
         $userId = $request->user()->id;
 
         $summaryReport = SummaryReport::withTrashed()
-            ->where('id', $id)
+            ->where('summary_report_id', $id)
             ->where('reported_by_user_id', $userId)
             ->first();
 

@@ -76,4 +76,25 @@ class ReportZipper
 
         return false;
     }
+
+    /**
+     * Tải file ZIP từ storage và trả về response download.
+     * 
+     * @param string $zipFileName Tên file ZIP cần tải
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * 
+     * @throws \Exception
+     */
+    public function downloadZip(string $zipFileName)
+    {
+        $zipPath = "{$this->storagePath}/{$zipFileName}";
+
+        if (!Storage::disk($this->storageDisk)->exists($zipPath)) {
+            throw new \Exception("ZIP file not found: {$zipFileName}");
+        }
+
+        return response()->download(Storage::disk($this->storageDisk)->path($zipPath), $zipFileName);
+    }
+
+
 }
