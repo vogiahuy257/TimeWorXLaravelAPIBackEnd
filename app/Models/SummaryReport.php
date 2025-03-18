@@ -2,12 +2,9 @@
 
 namespace App\Models;
 
-use App\Services\ReportZipper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class SummaryReport extends Model
 {
@@ -21,7 +18,6 @@ class SummaryReport extends Model
         'project_description',
         'name',
         'reported_by_user_id',
-        'report_date',
         'summary',
         'completed_tasks',
         'upcoming_tasks',
@@ -29,6 +25,8 @@ class SummaryReport extends Model
         'zip_name',
         'zip_file_path',
     ];
+
+    protected $dates = ['deleted_at', 'report_date'];
 
     /**
      * Relationship với User

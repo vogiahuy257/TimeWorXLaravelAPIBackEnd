@@ -127,7 +127,7 @@ class SummaryReportController extends Controller
     /**
      * Lấy thông tin chi tiết của một summary report.
      */
-    public function getSummaryReportById(Request $request, int $id)
+    public function getSummaryReportById(Request $request, mixed $id)
     {
         $userId = $request->user()->id;
         
@@ -213,5 +213,45 @@ class SummaryReportController extends Controller
 
             return response()->json(['message' => 'Summary report permanently deleted!']);
         });
+    }
+
+    /**
+     * Lấy danh sách các báo cáo đã bị xóa mềm.
+     */
+    public function getDeletedSummaryReports(Request $request)
+    {       
+            $userId = $request->user()->id;
+        
+            $deletedReports = SummaryReport::onlyTrashed()
+            ->where('reported_by_user_id', $userId)
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+            
+            if ($deletedReports->isEmpty()) {
+                return response()->json(['message' => 'No deleted reports found.'], 404);
+            }
+        
+            return response()->json($deletedReports);
+    }
+
+    /**
+     * Khôi phục một báo cáo đã bị xóa mềm.
+     */
+    public function restoreSummaryReport(Request $request, mixed $id)
+    {
+        $userId = $request->user()->id;
+
+        $summaryReport = SummaryReport::onlyTrashed()
+            ->where('summary_report_id', $id)
+            ->where('reported_by_user_id', $userId)
+            ->first();
+
+        if (!$summaryReport) {
+            return response()->json(['message' => 'Report not found or unauthorized access.'], 403);
+        }
+
+        $summaryReport->restore();
+
+        return response()->json(['message' => 'Summary report restored successfully!']);
     }
 }

@@ -120,7 +120,8 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
         // Xóa vĩnh viễn báo cáo tổng hợp (xóa hoàn toàn, không thể khôi phục)
         Route::delete('/summary-reports/{id}/permanent', [SummaryReportController::class, 'permanentlyDeleteSummaryReport']);
         // Lấy danh sách các báo cáo đã bị xóa mềm (để người dùng có thể xem và khôi phục)
-        Route::get('/summary-reports/deleted', [SummaryReportController::class, 'getDeletedSummaryReports']);
+        Route::post('/summary-reports/deleted', [SummaryReportController::class, 'getDeletedSummaryReports']);
+    
         // Khôi phục một báo cáo đã bị xóa mềm
         Route::post('/summary-reports/{id}/restore', [SummaryReportController::class, 'restoreSummaryReport']);
     });
