@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class ProjectControllerView extends Controller
@@ -59,6 +58,7 @@ class ProjectControllerView extends Controller
                     'deadline' => $task->formatted_deadline,
                     'status' => $task->status_key,
                     'created_at' => $task->created_at,
+                    'time_start' => $task->time_start,
                     'is_late' => $task->is_late,
                     'is_near_deadline' => $task->is_near_deadline,
                 ];
@@ -70,30 +70,32 @@ class ProjectControllerView extends Controller
 
     public function createTaskToProject(Request $request, $id)
     {
-        $request->validate([
+        
+        $validatedData = $request->validate([
             'task_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|string|in:to-do,in-progress,verify,done', 
             'deadline' => 'required|date', 
+            'time_start' => 'required|date',
             'users' => 'nullable|array', 
             'users.*' => 'exists:users,id',
         ]);
-    
-        $task = new Task([
-            'task_name' => $request->input('task_name'),
+        $task = Task::create([
+            'task_name' => $validatedData['task_name'],
             'project_id' => $id, 
-            'task_description' => $request->input('description'),
-            'status_key' => $request->input('status'),
-            'deadline' => $request->input('deadline'),
+            'task_description' => $validatedData['description'],
+            'status_key' => $validatedData['status'],
+            'deadline' => $validatedData['deadline'],
+            'time_start' => $validatedData['time_start']
         ]);
 
-        $task->save();
     
+        // Gán user vào task nếu có danh sách users
         if ($request->has('users')) {
-            $task->users()->attach($request->input('users'));
+            $task->users()->attach($validatedData['users']);
         }
-    
-        return response()->json();
+
+        return response()->json($task, 201);
     }
     
 
@@ -126,6 +128,7 @@ class ProjectControllerView extends Controller
             'deadline' => 'sometimes|date',
             'description' => 'nullable|string',
             'status' => 'sometimes|string',
+            'time_start' => 'sometimes|date',
         ]);
 
         $task->status_key = $request->input('status');
@@ -136,13 +139,24 @@ class ProjectControllerView extends Controller
 
     public function updateTaskProject(Request $request, $projectId, $taskId)
     {
+        // Kiểm tra nếu projectId không hợp lệ
+        if (!$projectId) {
+            return response()->json(['error' => 'Project ID is required'], 400);
+        }
+
+        // Kiểm tra nếu taskId không hợp lệ
+        if (!$taskId) {
+            return response()->json(['error' => 'Task ID is required'], 400);
+        }
+        
         // Validate incoming request data
         $validatedData = $request->validate([
             'task_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|string|in:to-do,in-progress,verify,done',
             'deadline' => 'nullable|date',
-            'users' => 'nullable|array'
+            'users' => 'nullable|array',
+            'time_start' => 'nullable|date'
         ]);
 
         $task = Task::where('task_id', $taskId)->where('project_id', $projectId)->firstOrFail();
@@ -153,6 +167,7 @@ class ProjectControllerView extends Controller
             'description' => $validatedData['description'],
             'status' => $validatedData['status'],
             'deadline' => $validatedData['deadline'],
+            'time_start' => $validatedData['time_start']
         ]);
 
         // Sync the users related to the task

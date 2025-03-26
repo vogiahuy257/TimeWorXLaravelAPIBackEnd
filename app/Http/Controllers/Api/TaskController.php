@@ -6,8 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\PersonalPlan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class TaskController extends Controller
 {
@@ -94,12 +93,14 @@ class TaskController extends Controller
             'status_key' => 'required',
             'assigned_to_user_id' => 'nullable|exists:users,id',
             'deadline' => 'nullable|date',
+            'time_start' => 'nullable|date'
         ]);
 
         // Tạo task mới
         $task = Task::create($validatedData);
         return response()->json($task, 201);
     }
+
 
     /**
      * Display the specified task.
@@ -132,6 +133,7 @@ class TaskController extends Controller
                 'status' => $task->status_key,
                 'is_late' => $task->is_late,
                 'is_near_deadline' => $task->is_near_deadline,
+                'time_start' => $task->time_start,
             ],
             'project' => [
                 'id' => $task->project_id,
@@ -167,6 +169,7 @@ class TaskController extends Controller
                 'status' => $task->status_key,
                 'is_late' => $task->is_late,
                 'is_near_deadline' => $task->is_near_deadline,
+                'time_start' => $task->time_start,
             ];
 
             if (!in_array($task->project_id, array_column($response['projects'], 'id'))) {
@@ -207,17 +210,18 @@ class TaskController extends Controller
             return response()->json(['error' => 'Task not found'], 404);
         }
 
-        $request->validate([
-            'task_name' => 'sometimes|string|max:255',
-            'deadline' => 'sometimes|date',
-            'description' => 'nullable|string',
-            'status' => 'sometimes|string',
+        $validatedData = $request->validate([
+            'status_key' => 'sometimes|string',
         ]);
-        
-        $task->status_key = $request->input('status');
-        $task->save();
+
+        \Log::info($validatedData);
+
+        $task->update($validatedData);
         $task->checkDeadlineStatus();
-        return response()->json();
+
+        \Log::info($task);
+
+        return response()->json($task);
     }
 
     /**

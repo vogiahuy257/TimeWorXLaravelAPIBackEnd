@@ -20,6 +20,7 @@ class Task extends Model
         'status_key',
         'assigned_to_user_id',
         'deadline', 
+        'time_start'
     ];
 
      // Quan hệ belongsTo với model Project
@@ -39,6 +40,7 @@ class Task extends Model
         'updated_at',
         'created_at',
         'deadline', 
+        'time_start',
     ];
 
     // Tự động kiểm tra và cập nhật trạng thái deadline

@@ -63,10 +63,10 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
         // Route::get('tasks/{task}', [TaskController::class, 'show']);
         
         // Route cho phương thức update (PUT /api/v1/tasks/{task})
-        Route::put('tasks/{task}', [TaskController::class, 'update']);
+        Route::put('tasks/{id}', [TaskController::class, 'update']);
         
         // Route cho phương thức destroy (DELETE /api/v1/tasks/{task})
-        Route::delete('tasks/{task}', [TaskController::class, 'destroy']);
+        Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
     });
     
     Route::get('/tasks/{projectId}/done', [TaskController::class, 'getDoneTasksByProject']);

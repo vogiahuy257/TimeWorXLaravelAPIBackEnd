@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('task_name', 100); 
             $table->text('task_description')->nullable(); 
             $table->string('status_key', 20)->nullable();
+            $table->date('time_start')->nullable();
             $table->date('deadline')->nullable(); 
             $table->boolean('is_late')->default(false); // Trễ deadline
             $table->boolean('is_near_deadline')->default(false); // Gần hết hạn deadline

@@ -26,9 +26,9 @@ class ProfilePictureService
             return ['error' => 'Unauthorized', 'status' => 401];
         }
 
-        $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        // $request->validate([
+        //     'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        // ]);
 
         $this->ensureStoragePathExists();
 
