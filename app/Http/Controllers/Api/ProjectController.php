@@ -69,6 +69,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'project_name' => 'required|string|max:100',
             'project_description' => 'nullable|string',
+            'project_priority' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
             'project_status'=>'nullable|string|max:200',
@@ -79,6 +80,11 @@ class ProjectController extends Controller
 
         // Tạo dự án mới
         $project = Project::create($validated);
+
+        $project->updateProjectStatus();
+        $project->late_tasks_count = $project->countLateTasks();
+        $project->near_deadline_tasks_count = $project->countNearDeadlineTasks();
+        $project->completed_tasks_ratio = $project->countTasksAndCompleted();
 
         return response()->json([
             'message' => 'Project created successfully',
