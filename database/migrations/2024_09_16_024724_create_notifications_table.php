@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notifications', function (Blueprint $table) {
-            $table->id('notification_id'); // Primary key
-            $table->uuid('user_id');  // Foreign key to 'users' table
-            $table->string('notification_type', 50); // Notification type
+            $table->id(); // Primary key (bigint, auto-increment)
+            $table->uuid('user_id')->index(); // Foreign key to 'users' table
+            $table->enum('notification_type', ['info', 'warning', 'error', 'success']); // Enum for notification type
             $table->text('message'); // Notification message
-            $table->timestamp('notification_date')->useCurrent(); // Notification date
-            $table->boolean('read_status')->default(false); // Read status (0 or 1)
-            $table->string('link', 255)->nullable(); // Link for the notification
+            $table->timestamp('notification_date')->useCurrent(); // Auto-set current timestamp
+            $table->boolean('read_status')->default(false)->index(); // Read status (0 or 1)
+            $table->text('link')->nullable(); // Link for the notification
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

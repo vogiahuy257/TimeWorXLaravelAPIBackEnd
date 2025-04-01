@@ -18,13 +18,6 @@ class Notification extends Model
     protected $table = 'notifications';
 
     /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'notification_id';
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
