@@ -15,6 +15,7 @@ use App\Http\Controllers\API\MeetingController;
 use App\Http\Controllers\API\SummaryReportController;
 use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -152,4 +153,12 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
         // chưa làm
         Route::post('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
     });
-    
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/markAsRead', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/markAllAsRead', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
+    Route::post('/notifications', [NotificationController::class, 'store']);
+});

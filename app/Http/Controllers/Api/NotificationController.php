@@ -1,21 +1,26 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Notification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class NotificationController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Lấy danh sách thông báo của người dùng.
      */
     public function index(Request $request)
     {
-        $userId = $request->user()->id; // Lấy ID người dùng hiện tại từ token hoặc session
-        $notifications = Notification::where('user_id', $userId)->orderBy('notification_date', 'desc')->get();
+        $userId = $request->user()->id;
+        $notifications = $this->notificationService->getUserNotifications($userId);
 
         return response()->json($notifications, 200);
     }
@@ -27,54 +32,64 @@ class NotificationController extends Controller
     {
         $request->validate([
             'notification_ids' => 'required|array',
-            'notification_ids.*' => 'exists:notifications,notification_id',
+            'notification_ids.*' => 'integer|exists:notifications,id',
         ]);
-
-        Notification::whereIn('notification_id', $request->notification_ids)
-            ->update(['read_status' => true]);
+    
+        $userId = $request->user()->id;
+        $notificationIds = $request->input('notification_ids');
+        $this->notificationService->markAsRead($notificationIds,$userId);
 
         return response()->json(['message' => 'Thông báo đã được đánh dấu là đã đọc'], 200);
     }
 
+    /**
+     * Đánh dấu tất cả thông báo là đã đọc.
+     */
+    public function markAllAsRead(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $this->notificationService->markAllAsRead($userId);
+
+        return response()->json(['message' => 'Tất cả thông báo đã được đánh dấu là đã đọc'], 200);
+    }
 
     /**
      * Xóa thông báo.
      */
     public function destroy($id)
     {
-        $notification = Notification::find($id);
+        $notification = $this->notificationService->deleteNotification($id);
 
         if (!$notification) {
             return response()->json(['message' => 'Thông báo không tồn tại'], 404);
         }
 
-        $notification->delete();
-
         return response()->json(['message' => 'Thông báo đã được xóa'], 200);
     }
 
     /**
-     * Tạo thông báo mới (cho admin hoặc hệ thống).
+     * Xóa tất cả thông báo.
+     */
+    public function destroyAll(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $this->notificationService->deleteAllNotifications($userId);
+
+        return response()->json(['message' => 'Tất cả thông báo đã được xóa'], 200);
+    }
+
+    /**
+     * Tạo thông báo mới.
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid|exists:users,id',
-            'notification_type' => 'required|string|max:50',
-            'message' => 'required|string',
-            'link' => 'nullable|string|max:255',
-        ]);
+        $notification = $this->notificationService->createNotification($request->all());
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if (isset($notification['errors'])) {
+            return response()->json(['errors' => $notification['errors']], 422);
         }
-
-        $notification = Notification::create([
-            'user_id' => $request->user_id,
-            'notification_type' => $request->notification_type,
-            'message' => $request->message,
-            'link' => $request->link,
-        ]);
 
         return response()->json(['message' => 'Thông báo đã được tạo', 'notification' => $notification], 201);
     }

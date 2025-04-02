@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Notification extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     /**
      * The name of the table associated with the model.
@@ -31,6 +31,8 @@ class Notification extends Model
         'link',
     ];
 
+    public $timestamps = false;
+
     /**
      * The attributes that should be cast.
      *
@@ -39,7 +41,6 @@ class Notification extends Model
     protected $casts = [
         'notification_date' => 'datetime',
         'read_status' => 'boolean',
-        'deleted_at' => 'datetime',
     ];
 
     /**
