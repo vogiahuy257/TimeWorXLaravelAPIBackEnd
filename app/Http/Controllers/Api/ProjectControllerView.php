@@ -6,9 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use App\Services\NotificationService;
 
 class ProjectControllerView extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
 
     public function index()
     {
@@ -68,8 +75,9 @@ class ProjectControllerView extends Controller
         return response()->json($response);
     }
 
-    public function createTaskToProject(Request $request, $id)
+    public function createTaskToProject(Request $request, $id,NotificationService $notificationService)
     {
+        $user = $request->user();
         
         $validatedData = $request->validate([
             'task_name' => 'required|string|max:255',
@@ -93,6 +101,16 @@ class ProjectControllerView extends Controller
         // Gán user vào task nếu có danh sách users
         if ($request->has('users')) {
             $task->users()->attach($validatedData['users']);
+
+            // Gửi thông báo cho từng user được thêm vào task
+            foreach ($validatedData['users'] as $userId) {
+                $notificationService->createNotification([
+                    'user_id' => $userId,
+                    'notification_type' => 'info', // Loại thông báo
+                    'message' => "You have been assigned the task '{$task->task_name}' by {$user->name}.",
+                    'link' => "/dashboard/task"
+                ]);
+            }
         }
 
         return response()->json($task, 201);
@@ -137,19 +155,15 @@ class ProjectControllerView extends Controller
         return response()->json();
     }
 
-    public function updateTaskProject(Request $request, $projectId, $taskId)
+    public function updateTaskProject(Request $request, $projectId, $taskId, NotificationService $notificationService)
     {
-        // Kiểm tra nếu projectId không hợp lệ
-        if (!$projectId) {
-            return response()->json(['error' => 'Project ID is required'], 400);
+        $user = $request->user(); // Người thực hiện cập nhật task
+
+        if (!$projectId || !$taskId) {
+            return response()->json(['error' => 'Project ID and Task ID are required'], 400);
         }
 
-        // Kiểm tra nếu taskId không hợp lệ
-        if (!$taskId) {
-            return response()->json(['error' => 'Task ID is required'], 400);
-        }
-        
-        // Validate incoming request data
+        // Validate dữ liệu đầu vào
         $validatedData = $request->validate([
             'task_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -161,7 +175,11 @@ class ProjectControllerView extends Controller
 
         $task = Task::where('task_id', $taskId)->where('project_id', $projectId)->firstOrFail();
 
-        // Update the task with the validated data
+        // Lưu dữ liệu cũ để kiểm tra thay đổi
+        $oldData = $task->only(['task_name', 'description', 'deadline']);
+        $oldUsers = $task->users()->pluck('users.id')->toArray();
+
+        // Cập nhật thông tin task
         $task->update([
             'task_name' => $validatedData['task_name'],
             'description' => $validatedData['description'],
@@ -170,14 +188,69 @@ class ProjectControllerView extends Controller
             'time_start' => $validatedData['time_start']
         ]);
 
-        // Sync the users related to the task
+        // Nếu có user mới được chỉ định, cập nhật danh sách người dùng trong task
         if (isset($validatedData['users'])) {
             $task->users()->sync($validatedData['users']);
         }
         $task->checkDeadlineStatus();
 
+        // Danh sách user sau khi cập nhật
+        $newUsers = $task->users()->pluck('users.id')->toArray();
+
+        // 🔍 Kiểm tra xem có thay đổi về nội dung task hay không
+        $notifications = [];
+
+        if ($oldData['task_name'] !== $validatedData['task_name'] || $oldData['description'] !== $validatedData['description']) {
+            $notifications[] = "Task information has been updated.";
+        }
+
+        if ($oldData['deadline'] !== $validatedData['deadline']) {
+            $notifications[] = "Task deadline has been updated to {$validatedData['deadline']}.";
+        }
+
+        // Gửi thông báo cập nhật nếu có thay đổi nội dung task
+        if (!empty($notifications)) {
+            $message = "The task '{$task->task_name}' has been updated by {$user->name}: " . implode(' ', $notifications);
+
+            foreach ($newUsers as $userId) {
+                $notificationService->createNotification([
+                    'user_id' => $userId,
+                    'notification_type' => 'info',
+                    'message' => $message,
+                    'link' => "/dashboard/task"
+                ]);
+            }
+        }
+
+        // 🔍 Kiểm tra xem có user nào được thêm hoặc bị xóa không
+        $addedUsers = array_diff($newUsers, $oldUsers);
+        $removedUsers = array_diff($oldUsers, $newUsers);
+
+        if (!empty($addedUsers)) {
+            foreach ($addedUsers as $userId) {
+                $notificationService->createNotification([
+                    'user_id' => $userId,
+                    'notification_type' => 'info',
+                    'message' => "You have been assigned to the task '{$task->task_name}'.",
+                    'link' => "/dashboard/task"
+                ]);
+            }
+        }
+
+        if (!empty($removedUsers)) {
+            foreach ($removedUsers as $userId) {
+                $notificationService->createNotification([
+                    'user_id' => $userId,
+                    'notification_type' => 'warning',
+                    'message' => "You have been removed from the task '{$task->task_name}'.",
+                    'link' => "/dashboard/task"
+                ]);
+            }
+        }
+
         return response()->json();
     }
+
 
 
     // Xóa task

@@ -7,9 +7,16 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Report;
+use App\Services\NotificationService;
 
 class ProjectController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -202,7 +209,7 @@ class ProjectController extends Controller
     }
 
     //thêm người dùng vào dự án
-    public function addUserToProject(Request $request,$projectId)
+    public function addUserToProject(Request $request,$projectId,NotificationService $notificationService)
     {
         $userId = $request->input('user_id');
 
@@ -220,11 +227,20 @@ class ProjectController extends Controller
         }
 
         $project->users()->attach($userId);
+
+        // Gửi thông báo cho người dùng
+         $notificationService->createNotification([
+            'user_id' => $userId,
+            'notification_type' => 'success', // Loại thông báo thành công
+            'message' => "You have been added to the project: {$project->name}",
+            'link' => "/dashboard/project/{$projectId}/broad"
+        ]);
+
         return response()->json();
     }
 
     //xóa người dùng khỏi dự án
-    public function removeUserFromProject(Request $request, $projectId,$userId)
+    public function removeUserFromProject(Request $request, $projectId,$userId,NotificationService $notificationService)
     {
         $user_id = $request->user()->id;
 
@@ -251,6 +267,14 @@ class ProjectController extends Controller
         {
             // Xóa người dùng khỏi dự án
             $project->users()->detach($user_id);
+            // Gửi thông báo cho người dùng
+            $notificationService->createNotification([
+                'user_id' => $user_id,
+                'notification_type' => 'info', // Thông báo thông tin
+                'message' => "You have been removed from the project: {$project->name}",
+                'link' => null
+            ]);
+
             return response()->json();
         }
 
@@ -258,7 +282,7 @@ class ProjectController extends Controller
     }
 
 
-    public function updateUserRoleInProject(Request $request, string $projectId)
+    public function updateUserRoleInProject(Request $request, string $projectId,NotificationService $notificationService)
     {
         $validated = $request->validate([
             'user_id' => 'required|uuid',
@@ -266,10 +290,20 @@ class ProjectController extends Controller
         ]);
 
         $project = Project::findOrFail($projectId);
-        
+        $userId = $validated['user_id'];
+        $isProjectManager = $validated['is_project_manager'];
         // Cập nhật quyền cho người dùng
         $project->users()->updateExistingPivot($validated['user_id'], [
             'is_project_manager' => $validated['is_project_manager']
+        ]);
+
+        $role = $isProjectManager ? 'Manager' : 'Staff';
+
+        $notificationService->createNotification([
+            'user_id' => $userId,
+            'notification_type' => 'info', // Loại thông báo
+            'message' => "Your role in the project '{$project->name}' has been updated to {$role}.",
+            'link' => "/dashboard/project/{$projectId}/broad"
         ]);
 
         return response()->json(['message' => 'User role updated successfully']);
