@@ -6,10 +6,16 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\PersonalPlan;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
+use App\Services\NotificationService;
 
 class TaskController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     /**
      * Display a listing of the tasks.
      */
@@ -85,16 +91,23 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+        $userId = $request->user()->id;
         // Validate các dữ liệu được gửi từ form
         $validatedData = $request->validate([
             'project_id' => 'required',
             'task_name' => 'required|string|max:255',
             'task_description' => 'nullable|string',
+            'priority' => 'nullable|in:low,medium,high',
+            'in_charge_user_id' => 'nullable|exists:users,id',
             'status_key' => 'required',
             'assigned_to_user_id' => 'nullable|exists:users,id',
             'deadline' => 'nullable|date',
             'time_start' => 'nullable|date'
         ]);
+
+        if($validatedData['in_charge_user_id'] == null) {
+            $validatedData['in_charge_user_id'] = $userId;
+        }
 
         // Tạo task mới
         $task = Task::create($validatedData);
@@ -129,6 +142,8 @@ class TaskController extends Controller
                         'name' => $user->name,
                     ];
                 }),
+                'priority' => $task->priority,
+                'in_charge_user_id' => $task->in_charge_user_id,
                 'deadline' => $task->formatted_deadline,
                 'status' => $task->status_key,
                 'is_late' => $task->is_late,
@@ -165,6 +180,8 @@ class TaskController extends Controller
                         'name' => $user->name,
                     ];
                 }),
+                'priority' => $task->priority,
+                'in_charge_user_id' => $task->in_charge_user_id,
                 'deadline' => $task->formatted_deadline,
                 'status' => $task->status_key,
                 'is_late' => $task->is_late,
@@ -214,12 +231,23 @@ class TaskController extends Controller
             'status_key' => 'sometimes|string',
         ]);
 
-        \Log::info($validatedData);
-
         $task->update($validatedData);
-        $task->checkDeadlineStatus();
 
-        \Log::info($task);
+        if($validatedData['status_key'] == 'verify') {
+            
+            $projectName = $task->project ? $task->project->project_name : 'Unknown Project';
+
+            // Tạo thông báo với tên dự án
+            $message = "The task is ready for verification in project: '{$projectName}'.";
+            // Gửi thông báo cho người được giao nhiệm vụ
+            $this->notificationService->sendNotification(
+                $task->in_charge_user_id, 
+                'warning', 
+                $message,
+                '/dashboard/project/'.$task->project_id.'/broad'
+            );
+        }
+        $task->checkDeadlineStatus();
 
         return response()->json($task);
     }

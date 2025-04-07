@@ -19,8 +19,10 @@ class Task extends Model
         'task_description',
         'status_key',
         'assigned_to_user_id',
+        'in_charge_user_id',
         'deadline', 
-        'time_start'
+        'time_start',
+        'priority',
     ];
 
      // Quan hệ belongsTo với model Project
@@ -84,10 +86,18 @@ class Task extends Model
         return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id');
     }
 
+    // Người được giao nhiệm vụ
     // Quan hệ một-nhiều với User (người được giao nhiệm vụ)
     public function assignedUser()
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    // ✅ Người phụ trách task
+    // Quan hệ một-nhiều với User (người phụ trách task)
+    public function inChargeUser()
+    {
+        return $this->belongsTo(User::class, 'in_charge_user_id');
     }
 
     // Lấy số lượng người dùng liên quan đến task này
@@ -101,4 +111,20 @@ class Task extends Model
     {
         return Carbon::parse($this->deadline)->format('d-m-Y h:i A');
     }
+
+    /**
+     * Đồng bộ danh sách người dùng liên quan đến task.
+     *
+     * @param array $userIds Mảng các user_id
+     * @return void
+     */
+    public function syncUsers(array $userIds)
+    {
+        // Lọc bỏ các giá trị null hoặc rỗng, đảm bảo là unique
+        $filteredIds = collect($userIds)->filter()->unique()->toArray();
+
+        // Gán user vào task (sẽ tự động xóa user cũ không còn trong danh sách mới)
+        $this->users()->sync($filteredIds);
+    }
+
 }

@@ -26,7 +26,7 @@ class SummaryReportController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string',
-                'report_date' => 'required|date',
+                'report_date' => 'nullable|date',
                 'project_id' => 'nullable|integer',
                 'summary' => 'nullable|string',
                 'completed_tasks' => 'nullable|string',
@@ -69,7 +69,7 @@ class SummaryReportController extends Controller
                 // 📌 Lưu vào database
                 $summaryReport = SummaryReport::create([
                     'name' => $validated['name'],
-                    'report_date' => $validated['report_date'],
+                    'report_date' => $validated['report_date'] ?? now(),
                     'project_id' => $validated['project_id'] ?? null,
                     'project_name' => $validated['project_name'] ?? null,
                     'project_description' => $validated['project_description'] ?? null,

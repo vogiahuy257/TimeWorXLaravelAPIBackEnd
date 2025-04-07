@@ -19,12 +19,18 @@ return new class extends Migration
             $table->string('status_key', 20)->nullable();
             $table->date('time_start')->nullable();
             $table->date('deadline')->nullable(); 
+            $table->string('priority', 15)->default('medium');
             $table->boolean('is_late')->default(false); // Trễ deadline
             $table->boolean('is_near_deadline')->default(false); // Gần hết hạn deadline
             $table->timestamps();
-            $table->uuid('assigned_to_user_id')->nullable(); // Chuyển khóa ngoại thành UUID
-            $table->foreign('assigned_to_user_id')->references('id')->on('users')->onDelete('set null'); // Foreign key to 'users' table
             
+            $table->uuid('assigned_to_user_id')->nullable();
+            $table->foreign('assigned_to_user_id')->references('id')->on('users')->onDelete('set null'); // Foreign key to 'users' table
+        
+             // Người phụ trách task
+             $table->uuid('in_charge_user_id')->nullable();
+             $table->foreign('in_charge_user_id')->references('id')->on('users')->onDelete('set null');
+
             $table->boolean('is_flagged')->default(false); // Cờ pinh thông báo task có thay đổi
             $table->softDeletes();
         });

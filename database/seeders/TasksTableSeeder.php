@@ -106,12 +106,15 @@ class TasksTableSeeder extends Seeder
                 }
 
                 foreach ($tasks as $index => $task) {
+                    $user_change = [$user1, $user2, $user3][$index % 3]->id;
                     Task::create([
                         'project_id' => $project->project_id,
                         'task_name' => $task[0],
                         'task_description' => "Mô tả cho {$task[0]}",
                         'status_key' => $task[1],
-                        'assigned_to_user_id' => [$user1, $user2, $user3][$index % 3]->id,
+                        'assigned_to_user_id' => $user_change,
+                        'in_charge_user_id' => $user_change,
+                        'priority' => 'high',
                         'time_start' => Carbon::parse($project->start_date)->addDays($task[2]),
                         'deadline' => Carbon::parse($project->start_date)->addDays($task[3]),
                     ]);

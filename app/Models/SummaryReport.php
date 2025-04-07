@@ -24,6 +24,7 @@ class SummaryReport extends Model
         'project_issues',
         'zip_name',
         'zip_file_path',
+        'report_date',
     ];
 
     protected $dates = ['deleted_at', 'report_date'];

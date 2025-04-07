@@ -7,6 +7,28 @@ use Illuminate\Support\Facades\Validator;
 class NotificationService
 {
     /**
+     * Gửi một thông báo đến người dùng.
+     *
+     * @param string $userId UUID của người nhận
+     * @param string $type Loại thông báo (info, success, warning, error)
+     * @param string $message Nội dung thông báo
+     * @param string|null $link Đường dẫn (nếu có)
+     *
+     * @return Notification|array|null
+     */
+    public function sendNotification(string $userId, string $type, string $message, ?string $link = null)
+    {
+        $data = [
+            'user_id' => $userId,
+            'notification_type' => $type,
+            'message' => $message,
+            'link' => $link,
+        ];
+
+        return $this->createNotification($data);
+    }
+
+    /**
      * Tạo thông báo mới.
      */
     public function createNotification($data)

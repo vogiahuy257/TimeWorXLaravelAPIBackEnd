@@ -62,6 +62,8 @@ class ProjectControllerView extends Controller
                             'name' => $user->name, 
                         ];
                     }),
+                    'priority' => $task->priority,
+                    'in_charge_user_id' => $task->in_charge_user_id,
                     'deadline' => $task->formatted_deadline,
                     'status' => $task->status_key,
                     'created_at' => $task->created_at,
@@ -75,7 +77,7 @@ class ProjectControllerView extends Controller
         return response()->json($response);
     }
 
-    public function createTaskToProject(Request $request, $id,NotificationService $notificationService)
+    public function createTaskToProject(Request $request, $id)
     {
         $user = $request->user();
         
@@ -85,6 +87,9 @@ class ProjectControllerView extends Controller
             'status' => 'required|string|in:to-do,in-progress,verify,done', 
             'deadline' => 'required|date', 
             'time_start' => 'required|date',
+            'assigned_to_user_id' => 'nullable|string',
+            'in_charge_user_id' => 'nullable|string',
+            'priority' => 'nullable|string|in:low,medium,high', // Thêm quy tắc cho priority
             'users' => 'nullable|array', 
             'users.*' => 'exists:users,id',
         ]);
@@ -94,8 +99,23 @@ class ProjectControllerView extends Controller
             'task_description' => $validatedData['description'],
             'status_key' => $validatedData['status'],
             'deadline' => $validatedData['deadline'],
-            'time_start' => $validatedData['time_start']
+            'time_start' => $validatedData['time_start'],
+
+            'priority' => $validatedData['priority'] ?? 'medium', // nếu không có thì mặc định là 'medium'
+            'assigned_to_user_id' => $validatedData['assigned_to_user_id'] ?? $request->user()->id,
+            'in_charge_user_id' => $validatedData['in_charge_user_id'] ?? $request->user()->id,
         ]);
+
+        $inChargeUserId = $validatedData['in_charge_user_id'] ?? null;
+
+        if ($inChargeUserId) {
+            $this->notificationService->sendNotification(
+                $inChargeUserId,
+                'info',
+                "You have been assigned as the in-charge user for the task '{$validatedData['task_name']}' by {$user->name}.",
+                "/dashboard/task"
+            );
+        }
 
     
         // Gán user vào task nếu có danh sách users
@@ -104,7 +124,7 @@ class ProjectControllerView extends Controller
 
             // Gửi thông báo cho từng user được thêm vào task
             foreach ($validatedData['users'] as $userId) {
-                $notificationService->createNotification([
+                $this->notificationService->createNotification([
                     'user_id' => $userId,
                     'notification_type' => 'info', // Loại thông báo
                     'message' => "You have been assigned the task '{$task->task_name}' by {$user->name}.",
@@ -145,17 +165,27 @@ class ProjectControllerView extends Controller
             'task_name' => 'sometimes|string|max:255',
             'deadline' => 'sometimes|date',
             'description' => 'nullable|string',
-            'status' => 'sometimes|string',
+            'status' => 'required|string|in:to-do,in-progress,verify,done',
             'time_start' => 'sometimes|date',
         ]);
 
         $task->status_key = $request->input('status');
         $task->save();
+
+        if($request->input('status') == 'verify') {
+            // Gửi thông báo cho người dùng được chỉ định
+            $this->notificationService->sendNotification(
+                $task->in_charge_user_id,
+                'info',
+                "Task '{$task->task_name}' has been marked as verify.",
+                "/dashboard/task"
+            );
+        }
         $task->checkDeadlineStatus();
         return response()->json();
     }
 
-    public function updateTaskProject(Request $request, $projectId, $taskId, NotificationService $notificationService)
+    public function updateTaskProject(Request $request, $projectId, $taskId)
     {
         $user = $request->user(); // Người thực hiện cập nhật task
 
@@ -168,6 +198,9 @@ class ProjectControllerView extends Controller
             'task_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|string|in:to-do,in-progress,verify,done',
+            'assigned_to_user_id' => 'nullable|string',
+            'in_charge_user_id' => 'nullable|string',
+            'priority' => 'nullable|string',
             'deadline' => 'nullable|date',
             'users' => 'nullable|array',
             'time_start' => 'nullable|date'
@@ -176,31 +209,34 @@ class ProjectControllerView extends Controller
         $task = Task::where('task_id', $taskId)->where('project_id', $projectId)->firstOrFail();
 
         // Lưu dữ liệu cũ để kiểm tra thay đổi
-        $oldData = $task->only(['task_name', 'description', 'deadline']);
+        $oldData = $task->only(['task_name', 'status_key','description', 'deadline','priority','in_charge_user_id']);
         $oldUsers = $task->users()->pluck('users.id')->toArray();
 
+        if (isset($validatedData['users'])) {
+            $task->syncUsers($validatedData['users']);
+        }
+        
         // Cập nhật thông tin task
         $task->update([
             'task_name' => $validatedData['task_name'],
-            'description' => $validatedData['description'],
+            'task_description' => $validatedData['description'],
+            'assigned_to_user_id' => $validatedData['assigned_to_user_id'] ?? $task->assigned_to_user_id,
+            'in_charge_user_id' => $validatedData['in_charge_user_id'] ?? $task->in_charge_user_id,
+            'priority' => $validatedData['priority'] ?? $task->priority,
             'status' => $validatedData['status'],
             'deadline' => $validatedData['deadline'],
             'time_start' => $validatedData['time_start']
         ]);
-
-        // Nếu có user mới được chỉ định, cập nhật danh sách người dùng trong task
-        if (isset($validatedData['users'])) {
-            $task->users()->sync($validatedData['users']);
-        }
         $task->checkDeadlineStatus();
 
+        $newStatus = $validatedData['status'];
         // Danh sách user sau khi cập nhật
         $newUsers = $task->users()->pluck('users.id')->toArray();
 
         // 🔍 Kiểm tra xem có thay đổi về nội dung task hay không
         $notifications = [];
 
-        if ($oldData['task_name'] !== $validatedData['task_name'] || $oldData['description'] !== $validatedData['description']) {
+        if ($oldData['task_name'] !== $validatedData['task_name'] || $oldData['description'] !== $validatedData['description'] || $oldData['priority'] !== $validatedData['priority']) {
             $notifications[] = "Task information has been updated.";
         }
 
@@ -208,43 +244,53 @@ class ProjectControllerView extends Controller
             $notifications[] = "Task deadline has been updated to {$validatedData['deadline']}.";
         }
 
+        // 🔍 Kiểm tra xem có user nào được thêm hoặc bị xóa không
+        $addedUsers = array_diff($newUsers, $oldUsers);
+
+        if (!empty($addedUsers)) {
+            foreach ($addedUsers as $userId) {
+                $this->notificationService->sendNotification(
+                    $userId,
+                    'info',
+                    "You have been assigned to the task '{$task->task_name}'.",
+                    "/dashboard/task"
+                );
+            }
+        }
+
+        if (($validatedData['in_charge_user_id'] ?? null) && ($validatedData['in_charge_user_id'] ?? null) != $task->in_charge_user_id) {
+            $this->notificationService->sendNotification(
+                $validatedData['in_charge_user_id'],
+                'info',
+                "You have been assigned as the in-charge user for the task '{$task->task_name}' by {$user->name}.",
+                "/dashboard/project/{$projectId}/broad"
+            );
+        }
+
+        if ($oldData['status_key'] == 'verify' && $newStatus != 'done' && $newStatus != 'verify') {
+            // Gửi thông báo cho người dùng được chỉ định
+            foreach ($newUsers as $userId) {
+                $this->notificationService->sendNotification(
+                    $userId,
+                    'error',
+                    "Task '{$task->task_name}' has been unverified.",
+                    "/dashboard/task"
+                );
+            }
+        }
+
+        
         // Gửi thông báo cập nhật nếu có thay đổi nội dung task
         if (!empty($notifications)) {
             $message = "The task '{$task->task_name}' has been updated by {$user->name}: " . implode(' ', $notifications);
 
             foreach ($newUsers as $userId) {
-                $notificationService->createNotification([
-                    'user_id' => $userId,
-                    'notification_type' => 'info',
-                    'message' => $message,
-                    'link' => "/dashboard/task"
-                ]);
-            }
-        }
-
-        // 🔍 Kiểm tra xem có user nào được thêm hoặc bị xóa không
-        $addedUsers = array_diff($newUsers, $oldUsers);
-        $removedUsers = array_diff($oldUsers, $newUsers);
-
-        if (!empty($addedUsers)) {
-            foreach ($addedUsers as $userId) {
-                $notificationService->createNotification([
-                    'user_id' => $userId,
-                    'notification_type' => 'info',
-                    'message' => "You have been assigned to the task '{$task->task_name}'.",
-                    'link' => "/dashboard/task"
-                ]);
-            }
-        }
-
-        if (!empty($removedUsers)) {
-            foreach ($removedUsers as $userId) {
-                $notificationService->createNotification([
-                    'user_id' => $userId,
-                    'notification_type' => 'warning',
-                    'message' => "You have been removed from the task '{$task->task_name}'.",
-                    'link' => "/dashboard/task"
-                ]);
+                $this->notificationService->sendNotification(
+                    $userId,
+                    'info',
+                    $message,
+                    "/dashboard/task"
+                );
             }
         }
 

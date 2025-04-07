@@ -6,9 +6,16 @@ use App\Models\TaskComment;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class TaskCommentController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     /**
      * Display a listing of the comments for a specific task.
      */
@@ -49,11 +56,38 @@ class TaskCommentController extends Controller
             'comment_text' => 'required|string',
             'is_manager_comment' => 'boolean',
         ]);
-        
-        
 
+        $task = Task::findOrFail($validatedData['task_id']);
+        $userId = Auth::id();
+        $message = "'New comment from user on report to task: '{$task->task_name}'";
+        if ($validatedData['is_manager_comment']) {
+            $message = "'New comment from project manager on report to task: '{$task->task_name}'";
+        }
         // Tạo bình luận mới
         $comment = TaskComment::create($validatedData);
+
+        // Gửi thông báo đến người dùng liên quan
+        if($validatedData['is_manager_comment']) {
+            foreach ($task->users as $user) {
+                if ($user->getKey() !== $userId) {
+                    $this->notificationService->sendNotification(
+                        $user->getKey(), // an toàn hơn so với $user->id nếu dùng UUID
+                        'info',
+                        $message,
+                        'dashboard/task/'
+                    );
+                }
+            }
+        } else {
+            if ($task->in_charge_user_id && $task->in_charge_user_id !== $userId) {
+                $this->notificationService->sendNotification(
+                    $task->in_charge_user_id,
+                    'info',
+                    $message,
+                    'dashboard/project/' . $task->project_id . '/broad'
+                );
+            }
+        }
 
         return response()->json($comment, 201);
     }

@@ -6,9 +6,16 @@ use App\Models\ReportComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
-
+use App\Services\NotificationService;
+use App\Models\Task;
 class ReportCommentController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     // Xem danh sách bình luận của một báo cáo
     public function index($taskId, $userId)
     {
@@ -45,25 +52,47 @@ class ReportCommentController extends Controller
     public function store(Request $request, $taskId, $userId)
     {
         try {
-            // Xác thực dữ liệu từ request
-            $validator = Validator::make($request->all(), [
+            $validatedData = $request->validate([
                 'comment' => 'required|string', // Bình luận là chuỗi và bắt buộc
                 'is_project_manager' => 'required|boolean', // Xác định vai trò của người dùng
             ]);
-
-            if ($validator->fails()) {
-                // Trả về lỗi xác thực nếu không hợp lệ
-                return response()->json($validator->errors(), 400);
-            }
 
             // Tạo mới một bình luận
             $comment = new ReportComment();
             $comment->task_id = $taskId; // Gắn bình luận với task cụ thể
             $comment->comment_by_user_id = $userId; // ID người dùng tạo bình luận
-            $comment->comment = $request->comment; // Nội dung bình luận
-            $comment->is_project_manager = $request->is_project_manager; // Vai trò người dùng
+            $comment->comment = $validatedData['comment']; // Nội dung bình luận
+            $comment->is_project_manager = $validatedData['is_project_manager']; // Vai trò người dùng
             $comment->is_pinned = false; // Mặc định không ghim
             $comment->save(); // Lưu bình luận vào database
+
+
+            if ($request->is_project_manager) {
+                $task = Task::with('users')->findOrFail($taskId);
+                $message = "New comment on report to task: '{$task->task_name}'";
+                // Nếu là PM: gửi cho tất cả users của task, trừ chính mình
+                foreach ($task->users as $user) {
+                        $this->notificationService->sendNotification(
+                            $user->getKey(), // an toàn hơn so với $user->id nếu dùng UUID
+                            'info',
+                            $message,
+                            '/dashboard/task'
+                        );
+                }
+            } else {
+                
+                $task = Task::findOrFail($taskId);
+                $message = "New comment on report to task: '{$task->task_name}'";
+                // Nếu là user: gửi cho người phụ trách task
+                if ($task->in_charge_user_id && $task->in_charge_user_id !== $userId) {
+                    $this->notificationService->sendNotification(
+                        $task->in_charge_user_id,
+                        'info',
+                        $message,
+                        '/dashboard/project/' . $task->project_id . '/broad'
+                    );
+                }
+            }
 
             // Lấy lại danh sách bình luận để trả về
             $comment = ReportComment::with(['user' => function($query) {
