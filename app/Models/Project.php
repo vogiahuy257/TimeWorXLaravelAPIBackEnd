@@ -102,7 +102,8 @@ class Project extends Model
             $this->project_status = "to-do";
         }
 
-    
+        // gửi thông báo realtime project_status ở đây
+        
         return $this->save();
     }
 
@@ -164,6 +165,7 @@ class Project extends Model
                     ->withPivot('is_project_manager')
                     ->withTimestamps();
     }
+    
 
     // Automatically add project manager to the users list
     public static function boot()

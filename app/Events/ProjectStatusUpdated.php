@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -19,7 +18,6 @@ class ProjectStatusUpdated implements ShouldBroadcastNow
         $this->payload = $data->toArray();
     }
 
-
     public function broadcastOn(): PrivateChannel
     {
         return new PrivateChannel("user.{$this->payload['user_id']}");
@@ -32,6 +30,13 @@ class ProjectStatusUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return $this->payload;
+        \Log::info('Broadcasting project status update', [
+            'project_id' => $this->payload['project_id'],
+            'project_status'     => $this->payload['project_status'],
+        ]);
+        return [
+            'project_id' => $this->payload['project_id'],
+            'project_status'     => $this->payload['project_status'],
+        ];
     }
 }

@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\PersonalPlan;
 use Illuminate\Http\Request;
 use App\Services\NotificationService;
+use App\Services\ProjectStatusBroadcastService;
+use App\Models\Project;
 
 class TaskController extends Controller
 {
@@ -248,6 +250,11 @@ class TaskController extends Controller
             );
         }
         $task->checkDeadlineStatus();
+        
+        $project = Project::where('project_id', $task->project_id)->first();
+        $broadcaster = new ProjectStatusBroadcastService($project);
+        $broadcaster->updateAndSendProjectStatus($validatedData['status_key']);
+
 
         return response()->json($task);
     }

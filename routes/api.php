@@ -17,6 +17,8 @@ use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Services\NotificationService;
+use App\Services\ProjectStatusBroadcastService;
+use App\Models\Project;
 
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -179,4 +181,17 @@ Route::post('/test-notification', function () {
         'status' => 'ok',
         'sent' => $notification
     ]);
+});
+
+Route::post('/test-project', function () {
+    $project = Project::where('project_id', "2")->first();
+
+    if (!$project) {
+        return response()->json(['message' => 'Project not found'], 404);
+    }
+
+    $broadcaster = new ProjectStatusBroadcastService($project);
+    $broadcaster->updateAndSendProjectStatus('test-status');
+
+    return response()->json(['message' => 'Broadcast sent successfully']);
 });

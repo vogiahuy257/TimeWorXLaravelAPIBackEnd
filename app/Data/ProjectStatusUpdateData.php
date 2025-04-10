@@ -7,13 +7,13 @@ use App\Data\Contracts\ProjectStatusUpdateDataInterface;
 class ProjectStatusUpdateData implements ProjectStatusUpdateDataInterface
 {
     protected int $projectId;
-    protected string $status;
+    protected string $project_status;
     protected string $userId;
 
-    public function __construct(int $projectId, string $status, string $userId)
+    public function __construct(int $projectId, string $project_status, string $userId)
     {
         $this->projectId = $projectId;
-        $this->status = $status;
+        $this->project_status = $project_status;
         $this->userId = $userId;
     }
 
@@ -30,7 +30,7 @@ class ProjectStatusUpdateData implements ProjectStatusUpdateDataInterface
     {
         return [
             'project_id' => $this->projectId,
-            'project_status' => $this->status,
+            'project_status' => $this->project_status,
             'user_id' => $this->userId,
         ];
     }
@@ -42,7 +42,7 @@ class ProjectStatusUpdateData implements ProjectStatusUpdateDataInterface
 
     public function getStatus(): string
     {
-        return $this->status;
+        return $this->project_status;
     }
 
     public function getUserId(): string
