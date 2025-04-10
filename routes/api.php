@@ -16,6 +16,8 @@ use App\Http\Controllers\API\SummaryReportController;
 use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Services\NotificationService;
+
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -161,4 +163,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
     Route::post('/notifications', [NotificationController::class, 'store']);
+});
+
+Route::post('/test-notification', function () {
+    $notificationService = app(NotificationService::class);
+
+    $userId = 'c40e8cc3-1e16-48ea-aab9-9cd71ffadef3'; // ⚠️ Thay bằng UUID thật của user
+    $type = 'success';
+    $message = 'test notification';
+    $link = null; // hoặc null nếu không cần
+
+    $notification = $notificationService->sendNotification($userId, $type, $message, $link);
+
+    return response()->json([
+        'status' => 'ok',
+        'sent' => $notification
+    ]);
 });

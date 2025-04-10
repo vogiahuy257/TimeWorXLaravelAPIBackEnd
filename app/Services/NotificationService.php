@@ -3,7 +3,8 @@ namespace App\Services;
 
 use App\Models\Notification;
 use Illuminate\Support\Facades\Validator;
-
+use App\Data\Factories\NotificationDataFactory;
+use App\Events\NotificationReceived;
 class NotificationService
 {
     /**
@@ -18,14 +19,10 @@ class NotificationService
      */
     public function sendNotification(string $userId, string $type, string $message, ?string $link = null)
     {
-        $data = [
-            'user_id' => $userId,
-            'notification_type' => $type,
-            'message' => $message,
-            'link' => $link,
-        ];
+        $data = NotificationDataFactory::make($userId, $type, $message, $link);
+        event(new NotificationReceived($data));
 
-        return $this->createNotification($data);
+        return $this->createNotification($data->toArray());
     }
 
     /**
