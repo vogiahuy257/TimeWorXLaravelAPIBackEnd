@@ -12,5 +12,8 @@ interface NotificationDataInterface
 
     public function getLink(): ?string;
 
+    public function getNotificationDate(): string;
+
     public function toArray(): array;
 }
+

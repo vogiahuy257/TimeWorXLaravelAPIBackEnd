@@ -3,6 +3,7 @@
 namespace App\Data;
 
 use App\Data\Contracts\NotificationDataInterface;
+use Illuminate\Support\Carbon; // thêm use nếu cần
 
 class NotificationData implements NotificationDataInterface
 {
@@ -10,8 +11,11 @@ class NotificationData implements NotificationDataInterface
         protected string $userId,
         protected string $type,
         protected string $message,
-        protected ?string $link = null
-    ) {}
+        protected ?string $link = null,
+        protected ?string $notificationDate = null // thêm để lưu ngày
+    ) {
+        $this->notificationDate = now(); // gán nếu chưa có
+    }
 
     public function getUserId(): string
     {
@@ -33,6 +37,11 @@ class NotificationData implements NotificationDataInterface
         return $this->link;
     }
 
+    public function getNotificationDate(): string
+    {
+        return $this->notificationDate;
+    }
+
     public function toArray(): array
     {
         return [
@@ -40,6 +49,7 @@ class NotificationData implements NotificationDataInterface
             'notification_type' => $this->type,
             'message' => $this->message,
             'link' => $this->link,
+            'notification_date' => $this->notificationDate,
         ];
     }
 }

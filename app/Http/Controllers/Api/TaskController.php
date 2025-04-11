@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Services\NotificationService;
 use App\Services\ProjectStatusBroadcastService;
 use App\Models\Project;
+use App\Services\TaskStatusBroadcastService;
 
 class TaskController extends Controller
 {
@@ -223,6 +224,7 @@ class TaskController extends Controller
      */
     public function update(Request $request, $id)
     {
+        /** @var \App\Models\Task $task */
         $task = Task::find($id);
 
         if (!$task) {
@@ -235,27 +237,21 @@ class TaskController extends Controller
 
         $task->update($validatedData);
 
-        if($validatedData['status_key'] == 'verify') {
-            
-            $projectName = $task->project ? $task->project->project_name : 'Unknown Project';
+        (new TaskStatusBroadcastService)->sendStatusUpdate($task, $validatedData['status_key']);
 
-            // Tạo thông báo với tên dự án
-            $message = "The task is ready for verification in project: '{$projectName}'.";
+        $project = Project::where('project_id', $task->project_id)->first();
+        if(isset($validatedData['status_key']))
+        {
+            // Gửi capnhat trạng thái dự án
+            (new ProjectStatusBroadcastService($project))->updateAndSendProjectStatus($validatedData['status_key']);
+
             // Gửi thông báo cho người được giao nhiệm vụ
-            $this->notificationService->sendNotification(
-                $task->in_charge_user_id, 
-                'warning', 
-                $message,
-                '/dashboard/project/'.$task->project_id.'/broad'
-            );
+            if (in_array($validatedData['status_key'], ['done', 'verify'])) {
+                $this->notificationService->sendNotificationTaskStatusToManager($task, $project, $validatedData['status_key']);
+            }            
+            
         }
         $task->checkDeadlineStatus();
-        
-        $project = Project::where('project_id', $task->project_id)->first();
-        $broadcaster = new ProjectStatusBroadcastService($project);
-        $broadcaster->updateAndSendProjectStatus($validatedData['status_key']);
-
-
         return response()->json($task);
     }
 

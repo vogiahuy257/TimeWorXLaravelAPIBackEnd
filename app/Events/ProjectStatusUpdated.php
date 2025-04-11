@@ -2,12 +2,12 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Broadcasting\PrivateChannel;
 use App\Data\Contracts\ProjectStatusUpdateDataInterface;
 
-class ProjectStatusUpdated implements ShouldBroadcastNow
+class ProjectStatusUpdated implements ShouldBroadcast
 {
     use InteractsWithSockets, SerializesModels;
 
@@ -30,10 +30,6 @@ class ProjectStatusUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        \Log::info('Broadcasting project status update', [
-            'project_id' => $this->payload['project_id'],
-            'project_status'     => $this->payload['project_status'],
-        ]);
         return [
             'project_id' => $this->payload['project_id'],
             'project_status'     => $this->payload['project_status'],

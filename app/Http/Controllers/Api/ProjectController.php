@@ -170,6 +170,7 @@ class ProjectController extends Controller
             'project_name' => 'required|string|max:100',
             'project_description' => 'nullable|string',
             'start_date' => 'required|date',
+            'project_priority' => 'nullable|string',
             'end_date' => 'nullable|date',
             'project_status'=>'nullable|string|max:200',
         ]);
@@ -270,7 +271,7 @@ class ProjectController extends Controller
             // Gửi thông báo cho người dùng
             $notificationService->createNotification([
                 'user_id' => $user_id,
-                'notification_type' => 'info', // Thông báo thông tin
+                'notification_type' => 'error', // Thông báo thông tin
                 'message' => "You have been removed from the project: {$project->name}",
                 'link' => null
             ]);

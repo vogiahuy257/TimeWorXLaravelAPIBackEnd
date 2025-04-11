@@ -5,6 +5,9 @@ use App\Models\Notification;
 use Illuminate\Support\Facades\Validator;
 use App\Data\Factories\NotificationDataFactory;
 use App\Events\NotificationReceived;
+use App\Models\Task;
+use App\Models\Project;
+use App\Models\User;
 class NotificationService
 {
     /**
@@ -20,10 +23,91 @@ class NotificationService
     public function sendNotification(string $userId, string $type, string $message, ?string $link = null)
     {
         $data = NotificationDataFactory::make($userId, $type, $message, $link);
-        event(new NotificationReceived($data));
+        broadcast(new NotificationReceived($data));
 
         return $this->createNotification($data->toArray());
     }
+
+    public function sendNotificationTaskStatusToManager(Task $task, Project $project, string $statusKey)
+    {
+        $projectName = $project->project_name ?? 'Unknown Project';
+        $projectId = $project->project_id;
+        $projectManager = $project->project_manager_id;
+
+        $type = $statusKey === 'verify' ? 'error' : 'success';
+        $message = match ($statusKey) {
+            'done' => "The task is marked as done in project: '{$projectName}'.",
+            'verify' => "The task is ready for verification in project: '{$projectName}'.",
+            default => null,
+        };
+
+        if (!$message) return; // Nếu không phải các status cần gửi thông báo, bỏ qua
+
+        $link = '/dashboard/project/' . $projectId . '/broad';
+
+        // Gửi cho người được giao
+        $this->sendNotification($task->in_charge_user_id, $type, $message, $link);
+
+        // Gửi cho người phụ trách (nếu khác người được giao)
+        if ($task->in_charge_user_id !== $task->assigned_to_user_id) {
+            $this->sendNotification($task->assigned_to_user_id, $type, $message, $link);
+        }
+
+        // Gửi cho quản lý dự án (nếu khác người được giao và người phụ trách)
+        if ($task->in_charge_user_id !== $projectManager && $projectManager !== $task->assigned_to_user_id) {
+            $this->sendNotification($projectManager, $type, $message, $link);
+        }
+    }
+
+    public function sendNotificationTaskStatusToAll(Task $task, Project $project, string $statusKey, User $excludeUser)
+    {
+        $projectName = $project->project_name ?? 'Unknown Project';
+        $projectId = $project->project_id;
+        $taskName = $task->task_name ?? 'Unnamed Task';
+
+        // Lấy tên người quản lý từ DB (nếu cần)
+        $excludeUserId = $excludeUser->id ?? null;
+        $managerName = $excludeUser ? $excludeUser->name : 'Manager';
+
+        $type = 'info'; // Loại thông báo (có thể thay đổi theo yêu cầu)
+        $statusText = ucfirst($statusKey); // Done, Verify,...
+        $message = "Task '{$taskName}' in project '{$projectName}' has been updated to status '{$statusText}' by manager {$managerName}.";
+
+        $link = '/dashboard/project/' . $projectId . '/broad';
+
+        $excludedIds = [
+            $task->in_charge_user_id,
+            $task->assigned_to_user_id,
+            $project->project_manager_id,
+            $excludeUserId,
+        ];
+
+        // Gửi cho người được giao
+        if ($task->in_charge_user_id !== $excludeUserId) {
+            $this->sendNotification($task->in_charge_user_id, $type, $message, $link);
+        }
+
+        // Gửi cho người phụ trách (nếu khác)
+        if (!in_array($task->assigned_to_user_id, $excludedIds)) {
+            $this->sendNotification($task->assigned_to_user_id, $type, $message, $link);
+        }
+
+        // Gửi cho quản lý dự án (nếu khác người gửi)
+        if (!in_array($project->project_manager_id, $excludedIds)) {
+            $this->sendNotification($project->project_manager_id, $type, $message, $link);
+        }
+
+        $link = '/dashboard/task';
+        // Gửi cho các user liên quan (qua pivot)
+        foreach ($task->users as $user) {
+            if (!in_array($user->user_id, $excludedIds)) {
+                $this->sendNotification($user->user_id, $type, $message, $link);
+            }
+        }
+    }
+
+
+
 
     /**
      * Tạo thông báo mới.
@@ -35,6 +119,7 @@ class NotificationService
             'notification_type' => 'required|string|max:50',
             'message' => 'required|string',
             'link' => 'nullable|string|max:255',
+            'notification_date' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -47,7 +132,7 @@ class NotificationService
             'notification_type' => $data['notification_type'],
             'message' => $data['message'],
             'link' => $data['link'] ?? null,
-            'notification_date' => now(), 
+            'notification_date' => $data['notification_date'] ?? now(), 
         ]);
     }
 

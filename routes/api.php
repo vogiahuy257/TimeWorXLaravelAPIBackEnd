@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Services\NotificationService;
 use App\Services\ProjectStatusBroadcastService;
 use App\Models\Project;
+use App\Models\Task;
+use App\Services\TaskStatusBroadcastService;
 
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -195,3 +197,13 @@ Route::post('/test-project', function () {
 
     return response()->json(['message' => 'Broadcast sent successfully']);
 });
+
+Route::post('/test-task-update', fn () =>
+    tap(Task::where('task_id', '1')->first(), function ($task) {
+        if (!$task) {
+            abort(response()->json(['message' => 'Task not found'], 404));
+        }
+
+        (new TaskStatusBroadcastService())->sendStatusUpdate($task, 'test-status');
+    }) ? response()->json(['message' => 'Broadcast sent successfully']) : null
+);

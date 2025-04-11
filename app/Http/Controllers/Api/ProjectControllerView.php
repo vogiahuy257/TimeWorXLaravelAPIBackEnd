@@ -7,6 +7,8 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use App\Services\NotificationService;
+use App\Services\ProjectStatusBroadcastService;
+use App\Services\TaskStatusBroadcastService;
 
 class ProjectControllerView extends Controller
 {
@@ -113,7 +115,7 @@ class ProjectControllerView extends Controller
                 $inChargeUserId,
                 'info',
                 "You have been assigned as the in-charge user for the task '{$validatedData['task_name']}' by {$user->name}.",
-                "/dashboard/task"
+                '/dashboard/project/' . $task->project_id . '/broad'
             );
         }
 
@@ -155,6 +157,8 @@ class ProjectControllerView extends Controller
     // Cập nhật dự án
     public function update(Request $request, $id)
     {
+        $user = $request->user(); // Người thực hiện cập nhật task
+        /** @var \App\Models\Task $task */
         $task = Task::find($id);
 
         if (!$task) {
@@ -162,25 +166,20 @@ class ProjectControllerView extends Controller
         }
 
         $request->validate([
-            'task_name' => 'sometimes|string|max:255',
-            'deadline' => 'sometimes|date',
-            'description' => 'nullable|string',
             'status' => 'required|string|in:to-do,in-progress,verify,done',
-            'time_start' => 'sometimes|date',
         ]);
 
         $task->status_key = $request->input('status');
         $task->save();
+        $project = Project::where('project_id', $task->project_id)->first();
+        // Gửi capnhat trạng thái dự án
+        (new ProjectStatusBroadcastService($project))->updateAndSendProjectStatus($request->input('status'));
 
-        if($request->input('status') == 'verify') {
-            // Gửi thông báo cho người dùng được chỉ định
-            $this->notificationService->sendNotification(
-                $task->in_charge_user_id,
-                'info',
-                "Task '{$task->task_name}' has been marked as verify.",
-                "/dashboard/task"
-            );
-        }
+        (new TaskStatusBroadcastService)->sendStatusUpdate($task, $request->input('status'));
+
+        // Gửi thông báo cho người được giao nhiệm vụ
+        $this->notificationService->sendNotificationTaskStatusToAll($task, $project, $request->input('status'),$user);
+    
         $task->checkDeadlineStatus();
         return response()->json();
     }
