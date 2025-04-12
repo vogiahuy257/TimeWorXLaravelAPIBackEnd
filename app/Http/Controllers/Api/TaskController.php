@@ -146,7 +146,7 @@ class TaskController extends Controller
                     ];
                 }),
                 'priority' => $task->priority,
-                'in_charge_user_id' => $task->in_charge_user_id,
+                'in_charge_user_name' => $task->inChargeUser?->name,
                 'deadline' => $task->formatted_deadline,
                 'status' => $task->status_key,
                 'is_late' => $task->is_late,
@@ -184,6 +184,7 @@ class TaskController extends Controller
                     ];
                 }),
                 'priority' => $task->priority,
+                'in_charge_user_name' => $task->inChargeUser?->name,
                 'in_charge_user_id' => $task->in_charge_user_id,
                 'deadline' => $task->formatted_deadline,
                 'status' => $task->status_key,

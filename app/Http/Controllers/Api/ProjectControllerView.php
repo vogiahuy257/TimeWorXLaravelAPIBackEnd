@@ -49,7 +49,7 @@ class ProjectControllerView extends Controller
         foreach ($tasks as $task) {
 
             $task->checkDeadlineStatus();
-            
+
             $statusKey = $task->status_key ?? 'to-do'; 
             if (array_key_exists($statusKey, $response['tasks'])) {
                 $response['tasks'][$statusKey][] = [
@@ -65,6 +65,7 @@ class ProjectControllerView extends Controller
                         ];
                     }),
                     'priority' => $task->priority,
+                    'in_charge_user_name' => $task->inChargeUser?->name,
                     'in_charge_user_id' => $task->in_charge_user_id,
                     'deadline' => $task->formatted_deadline,
                     'status' => $task->status_key,

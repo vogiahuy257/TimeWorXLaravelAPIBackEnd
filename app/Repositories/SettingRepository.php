@@ -37,7 +37,6 @@ class SettingRepository
         if (!$setting) {
             return null;
         }
-        \Log::info($data);
         $setting->update($data);
 
         return $setting;
