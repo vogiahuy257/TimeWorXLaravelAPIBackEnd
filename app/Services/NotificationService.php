@@ -32,7 +32,7 @@ class NotificationService
     {
         $projectName = $project->project_name ?? 'Unknown Project';
         $projectId = $project->project_id;
-        $projectManager = $project->project_manager_id;
+        $projectManager = $project->project_manager;
 
         $type = $statusKey === 'verify' ? 'error' : 'success';
         $message = match ($statusKey) {
@@ -69,8 +69,11 @@ class NotificationService
         $excludeUserId = $excludeUser->id ?? null;
         $managerName = $excludeUser ? $excludeUser->name : 'Manager';
 
-        $type = 'info'; // Loại thông báo (có thể thay đổi theo yêu cầu)
-        $statusText = ucfirst($statusKey); // Done, Verify,...
+        $type = $statusKey == 'done'
+        ? 'success'
+        : ($statusKey == 'verify' ? 'error' : 'info');
+ // Loại thông báo (có thể thay đổi theo yêu cầu)
+        $statusText = $statusKey; // Done, Verify,...
         $message = "Task '{$taskName}' in project '{$projectName}' has been updated to status '{$statusText}' by manager {$managerName}.";
 
         $link = '/dashboard/project/' . $projectId . '/broad';
@@ -78,7 +81,7 @@ class NotificationService
         $excludedIds = [
             $task->in_charge_user_id,
             $task->assigned_to_user_id,
-            $project->project_manager_id,
+            $project->project_manager,
             $excludeUserId,
         ];
 
@@ -93,15 +96,15 @@ class NotificationService
         }
 
         // Gửi cho quản lý dự án (nếu khác người gửi)
-        if (!in_array($project->project_manager_id, $excludedIds)) {
-            $this->sendNotification($project->project_manager_id, $type, $message, $link);
+        if (!in_array($project->project_manager, $excludedIds)) {
+            $this->sendNotification($project->project_manager, $type, $message, $link);
         }
 
         $link = '/dashboard/task';
         // Gửi cho các user liên quan (qua pivot)
         foreach ($task->users as $user) {
-            if (!in_array($user->user_id, $excludedIds)) {
-                $this->sendNotification($user->user_id, $type, $message, $link);
+            if (!in_array($user->id, $excludedIds)) {
+                $this->sendNotification($user->id, $type, $message, $link);
             }
         }
     }

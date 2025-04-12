@@ -2,11 +2,9 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
-
 class TaskOnProjectStatusUpdated implements ShouldBroadcast
 {
     use InteractsWithSockets, SerializesModels;
@@ -37,6 +35,6 @@ class TaskOnProjectStatusUpdated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'TaskStatusUpdated';
+        return 'TaskOnProjectStatusUpdated';
     }
 }

@@ -9,7 +9,11 @@ class TaskStatusBroadcastService
 {
     public function sendStatusUpdate(Task $task, string $statusKey): void
     {
-        broadcast(new TaskStatusUpdated($task->task_id,$statusKey));
-        broadcast(new TaskOnProjectStatusUpdated($task->task_id, $statusKey, $task->project_id));
+        \Log::info('Broadcasting task status update', [
+            'task_id' => $task->task_id,
+            'status_key' => $statusKey,
+        ]);
+        broadcast(new TaskStatusUpdated($task->task_id,$statusKey))->toOthers();
+        broadcast(new TaskOnProjectStatusUpdated($task->task_id, $statusKey, $task->project_id))->toOthers();
     }
 }

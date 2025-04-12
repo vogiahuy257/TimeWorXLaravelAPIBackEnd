@@ -237,13 +237,14 @@ class TaskController extends Controller
 
         $task->update($validatedData);
 
-        (new TaskStatusBroadcastService)->sendStatusUpdate($task, $validatedData['status_key']);
-
         $project = Project::where('project_id', $task->project_id)->first();
         if(isset($validatedData['status_key']))
         {
             // Gửi capnhat trạng thái dự án
             (new ProjectStatusBroadcastService($project))->updateAndSendProjectStatus($validatedData['status_key']);
+
+            // Gửi capnhat trạng thái task
+            (new TaskStatusBroadcastService)->sendStatusUpdate($task, $validatedData['status_key']);
 
             // Gửi thông báo cho người được giao nhiệm vụ
             if (in_array($validatedData['status_key'], ['done', 'verify'])) {

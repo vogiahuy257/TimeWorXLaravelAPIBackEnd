@@ -198,12 +198,17 @@ Route::post('/test-project', function () {
     return response()->json(['message' => 'Broadcast sent successfully']);
 });
 
-Route::post('/test-task-update', fn () =>
-    tap(Task::where('task_id', '1')->first(), function ($task) {
-        if (!$task) {
-            abort(response()->json(['message' => 'Task not found'], 404));
-        }
+Route::post('/test-task-update', function () {
+    $task = Task::where('task_id', '1')->first();
+    
+    // Kiểm tra nếu task không tồn tại
+    if (!$task) {
+        return response()->json(['message' => 'Task not found'], 404); // Đảm bảo return response khi task không tồn tại
+    }
 
-        (new TaskStatusBroadcastService())->sendStatusUpdate($task, 'test-status');
-    }) ? response()->json(['message' => 'Broadcast sent successfully']) : null
-);
+    // Gọi service để gửi broadcast
+    (new TaskStatusBroadcastService())->sendStatusUpdate($task, 'done');
+    
+    // Trả về response thành công
+    return response()->json(['message' => 'Broadcast sent successfully']);
+});

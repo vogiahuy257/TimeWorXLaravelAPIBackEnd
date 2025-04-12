@@ -39,7 +39,7 @@ class ProjectStatusBroadcastService
                     $this->project->project_status,
                     $userId
                 )
-            ));
+            ))->toOthers();
         }
     }
 

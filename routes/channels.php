@@ -13,7 +13,6 @@ Broadcast::channel('user.{userId}', function ($user, $userId) {
 
 Broadcast::channel('project.{projectId}', function ($user, $projectId) {
     $project = Project::find($projectId);
-    \Log::info('⏩ Broadcasting project channel');
     if (!$project) return false;
 
     return
@@ -22,6 +21,5 @@ Broadcast::channel('project.{projectId}', function ($user, $projectId) {
 });
 
 Broadcast::channel('task', function ($user) {
-    \Log::info('⏩ Broadcasting task channel');
     return $user !== null;
 });
