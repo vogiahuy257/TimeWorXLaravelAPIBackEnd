@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Services\NotificationService;
 use App\Services\ProjectStatusBroadcastService;
 use App\Services\TaskStatusBroadcastService;
+use Illuminate\Support\Facades\DB;
+
 
 class ProjectControllerView extends Controller
 {
@@ -362,5 +364,26 @@ class ProjectControllerView extends Controller
 
         return response()->json($users);
     }
+
+    public function HorizontalTaskChart(Request $request, $projectId)
+    {
+        $taskStats = DB::table('task_user')
+            ->join('users', 'task_user.user_id', '=', 'users.id')
+            ->join('tasks', 'task_user.task_id', '=', 'tasks.task_id')
+            ->select(
+                'users.name as username',
+                DB::raw("SUM(CASE WHEN tasks.status_key = 'to-do' THEN 1 ELSE 0 END) as todo"),
+                DB::raw("SUM(CASE WHEN tasks.status_key = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
+                DB::raw("SUM(CASE WHEN tasks.status_key = 'verify' THEN 1 ELSE 0 END) as verify"),
+                DB::raw("SUM(CASE WHEN tasks.status_key = 'done' THEN 1 ELSE 0 END) as done"),
+                DB::raw("COUNT(tasks.task_id) as countTask")
+            )
+            ->where('tasks.project_id', $projectId)
+            ->groupBy('users.name')
+            ->get();
+    
+        return response()->json($taskStats);
+    }
+    
 
 }

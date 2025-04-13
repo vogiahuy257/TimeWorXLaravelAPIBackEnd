@@ -57,7 +57,7 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
     Route::middleware(['auth:sanctum'])->put('/v1/project-view/tasks/{taskId}/restore', [ProjectControllerView::class, 'restoreTask']); 
     Route::middleware(['auth:sanctum'])->delete('/v1/project-view/tasks/{taskId}/force-delete', [ProjectControllerView::class, 'forceDeleteTask']); 
     Route::get('/project-view/{project_id}/users', [ProjectControllerView::class, 'getUsersByProject']);
-
+    Route::middleware(['auth:sanctum'])->put('/v1/project-view/{projectId}/HorizontalTaskChart',[ProjectControllerView::class, 'HorizontalTaskChart']);
     // Task
     Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         // Route cho phương thức index (GET /api/v1/tasks)
