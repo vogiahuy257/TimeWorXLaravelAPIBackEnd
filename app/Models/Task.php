@@ -34,8 +34,9 @@ class Task extends Model
      // Hàm lấy tên của project
      public function getProjectName()
      {
-         return $this->project() ? $this->project->project_name : null;
-     }
+         return $this->project?->project_name;
+     }     
+
     // Đảm bảo các cột ngày tháng được xử lý tự động dưới dạng đối tượng Carbon
     protected $dates = [
         'deleted_at',

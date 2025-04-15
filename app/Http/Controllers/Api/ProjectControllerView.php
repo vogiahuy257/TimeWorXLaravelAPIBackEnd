@@ -28,10 +28,17 @@ class ProjectControllerView extends Controller
 
     public function show($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::with('manager')->findOrFail($id);
 
         $tasks = Task::where('project_id', $id)->with('users')->get();
 
+        $taskCount = $tasks->count();
+        $inProgressCount = $tasks->where('status_key', 'in-progress')->count();
+        $doneCount = $tasks->where('status_key', 'done')->count();
+        $todoCount = $tasks->where('status_key', 'to-do')->count();
+        $verifyCount = $tasks->where('status_key', 'verify')->count();
+        $lateCount = 0;
+        $nearDeadlineCount = 0;
         $response = [
             'project' => [
                 'id' => $project->project_id, 
@@ -39,6 +46,15 @@ class ProjectControllerView extends Controller
                 'description' => $project->project_description, 
                 'deadline' => $project->end_date,
                 'user_count' => $project->countProjectUsers(),
+                'start_date' => $project->start_date,
+                'project_priority' => $project->project_priority,
+                'project_manager' => $project->project_manager,
+                'taskCount' => $taskCount,
+                'inProgress' => $inProgressCount,
+                'done' => $doneCount,
+                'todo' => $todoCount,
+                'verify' => $verifyCount,
+
             ],
             'tasks' => [
                 'to-do' => [],
@@ -51,6 +67,13 @@ class ProjectControllerView extends Controller
         foreach ($tasks as $task) {
 
             $task->checkDeadlineStatus();
+
+            if ($task->is_late) {
+                $lateCount++;
+            }
+            if ($task->is_near_deadline) {
+                $nearDeadlineCount++;
+            }
 
             $statusKey = $task->status_key ?? 'to-do'; 
             if (array_key_exists($statusKey, $response['tasks'])) {
@@ -78,6 +101,9 @@ class ProjectControllerView extends Controller
                 ];
             }
         }
+        // Gán lại sau khi đếm xong
+        $response['project']['taskLateDeadline'] = $lateCount;
+        $response['project']['taskNearDeadline'] = $nearDeadlineCount;
 
         return response()->json($response);
     }
