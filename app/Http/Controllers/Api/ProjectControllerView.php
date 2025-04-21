@@ -120,7 +120,7 @@ class ProjectControllerView extends Controller
             'time_start' => 'required|date',
             'assigned_to_user_id' => 'nullable|string',
             'in_charge_user_id' => 'nullable|string',
-            'priority' => 'nullable|string|in:low,medium,high', // Thêm quy tắc cho priority
+            'priority' => 'nullable|string', // Thêm quy tắc cho priority
             'users' => 'nullable|array', 
             'users.*' => 'exists:users,id',
         ]);
@@ -131,7 +131,6 @@ class ProjectControllerView extends Controller
             'status_key' => $validatedData['status'],
             'deadline' => $validatedData['deadline'],
             'time_start' => $validatedData['time_start'],
-
             'priority' => $validatedData['priority'] ?? 'medium', // nếu không có thì mặc định là 'medium'
             'assigned_to_user_id' => $validatedData['assigned_to_user_id'] ?? $request->user()->id,
             'in_charge_user_id' => $validatedData['in_charge_user_id'] ?? $request->user()->id,

@@ -20,11 +20,11 @@
         <tr>
             <td style="padding: 20px 0;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="container" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px;">
-                    <tr>
+                    {{-- <tr>
                         <td style="background-color: #000000; padding: 28px; text-align: center;">
                             <img src="cid:logo.svg" alt="Company Logo" width="150" height="150" style="max-width: 100%; border-radius: 100%; height: auto;">
                         </td>
-                    </tr>
+                    </tr> --}}
                     <tr>
                         <td class="content" style="padding: 40px;">
                             <h1 style="color: #333333; font-size: 24px; margin-bottom: 20px;">Meeting Update Notification</h1>

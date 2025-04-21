@@ -20,11 +20,11 @@
         <tr>
             <td style="padding: 20px 0;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="container" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                    <tr>
+                    {{-- <tr>
                         <td style="background-color: #000000; padding: 28px; text-align: center;">
                             <img src="cid:logo.svg" alt="Company Logo" width="150" height="150" style="max-width: 100%; border-radius: 100%; height: auto;">
                         </td>
-                    </tr>
+                    </tr> --}}
                     <tr>
                         <td class="content" style="padding: 40px;">
                             <h1 style="color: #333333; font-size: 24px; margin-bottom: 20px;">Meeting Notification</h1>
@@ -64,14 +64,14 @@
                                         <span style="color: #666666;">{{ \Carbon\Carbon::parse($meeting->meeting_time)->format('h:i a') }}</span>
                                     </td>
                                 </tr>
-                                <tr>
+                                {{-- <tr>
                                     <td style="padding: 10px; background-color: #f8f8f8;">
                                         <strong style="color: #333333;">Created By:</strong>
                                     </td>
                                     <td style="padding: 10px; background-color: #f8f8f8;">
                                         <span style="color: #666666;">{{ $meeting->creator->full_name ?? 'Unknown' }}</span>
                                     </td>
-                                </tr>
+                                </tr> --}}
                             </table>
 
                             <p style="color: #666666; font-size: 16px; line-height: 1.5;">Thank you for your attention to this matter!</p>
