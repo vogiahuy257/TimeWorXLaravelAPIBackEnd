@@ -27,7 +27,7 @@ class UsersTableSeeder extends Seeder
         User::create([
             'name' => 'Huy',
             'email' => 'vogiahuy257@gmail.com',
-            'password' => Hash::make('22042004'),
+            'password' => Hash::make('12345678'),
             'profile_picture' => 'path/to/profile2.jpg',
             'role' => 'Admin',
         ]);
@@ -35,7 +35,7 @@ class UsersTableSeeder extends Seeder
         User::create([
             'name' => 'Cheese',
             'email' => '2224802010476@student.tdmu.edu.vn',
-            'password' => Hash::make('30082004'),
+            'password' => Hash::make('12345678'),
             'profile_picture' => 'path/to/profile2.jpg',
             'role' => 'Admin',
         ]);
@@ -43,7 +43,7 @@ class UsersTableSeeder extends Seeder
         User::create([
             'name' => 'Trân',
             'email' => 'lngbaotran2204@gmail.com',
-            'password' => Hash::make('30082004'),
+            'password' => Hash::make('12345678'),
             'profile_picture' => 'path/to/profile2.jpg',
             'role' => 'User',
         ]);
