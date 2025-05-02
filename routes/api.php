@@ -16,20 +16,18 @@ use App\Http\Controllers\API\SummaryReportController;
 use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Services\NotificationService;
-use App\Services\ProjectStatusBroadcastService;
-use App\Models\Project;
-use App\Models\Task;
-use App\Services\TaskStatusBroadcastService;
 
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+Route::middleware(['auth:sanctum'])
+->get('/user', function (Request $request) {
     return $request->user();
 });
 
 // Route::middleware('auth:sanctum')->post('/v1/user/update', [UserController::class, 'updateUser']);
 
-Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::class)->except(['index','edit','create']);
+Route::middleware(['auth:sanctum'])
+->apiResource('projects', ProjectController::class)
+->except(['index','edit','create']);
     
     Route::middleware(['auth:sanctum'])->get('/v1/projects/getall', [ProjectController::class, 'index']);
 
@@ -160,7 +158,8 @@ Route::middleware(['auth:sanctum'])->apiResource('projects', ProjectController::
         Route::post('/v1/settings/delete-account', [SettingController::class, 'deleteAccount']);
     });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')
+->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/markAsRead', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/markAllAsRead', [NotificationController::class, 'markAllAsRead']);

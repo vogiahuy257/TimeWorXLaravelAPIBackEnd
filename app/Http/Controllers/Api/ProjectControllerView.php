@@ -54,7 +54,6 @@ class ProjectControllerView extends Controller
                 'done' => $doneCount,
                 'todo' => $todoCount,
                 'verify' => $verifyCount,
-
             ],
             'tasks' => [
                 'to-do' => [],
